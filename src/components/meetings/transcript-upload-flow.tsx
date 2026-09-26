@@ -231,7 +231,7 @@ export function TranscriptUploadFlow() {
             >
               {isProcessing ? (
                 <>
-                  <LoaderCircle className="size-4 animate-spin" /> Processing transcript...
+                  <LoaderCircle className="size-4 animate-spin" /> Analyzing meeting...
                 </>
               ) : (
                 <>

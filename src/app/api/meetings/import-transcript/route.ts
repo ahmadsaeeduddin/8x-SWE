@@ -1,10 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
+import { analyzeMeeting } from "@/lib/ai/analyze-meeting";
+import {
+  clearMeetingAnalysis,
+  saveMeetingAnalysis,
+} from "@/lib/ai/save-meeting-analysis";
 import {
   MAX_TRANSCRIPT_FILE_BYTES,
   parseTranscriptFile,
 } from "@/lib/transcripts/parse-transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+export const maxDuration = 120;
 
 const AVATAR_COLORS = [
   "#f18f62",
@@ -77,6 +84,7 @@ export async function POST(request: NextRequest) {
   const supabase = createAdminClient();
   const slug = `${slugify(parsed.data.title)}-${randomUUID().slice(0, 8)}`;
   let meetingId: string | null = null;
+  let phase: "import" | "analysis" = "import";
 
   try {
     const { data: meeting, error: meetingError } = await supabase
@@ -142,11 +150,30 @@ export async function POST(request: NextRequest) {
 
     if (transcriptError) throw transcriptError;
 
+    const { error: analyzingError } = await supabase
+      .from("meetings")
+      .update({ status: "analyzing", error_message: null })
+      .eq("id", meeting.id);
+
+    if (analyzingError) throw analyzingError;
+    phase = "analysis";
+
+    const analysis = await analyzeMeeting({
+      title: parsed.data.title,
+      startsAt: parsed.data.startsAt,
+      durationSeconds: parsed.data.durationSeconds,
+      segments: parsed.data.segments,
+    });
+    await saveMeetingAnalysis({
+      meetingId: meeting.id,
+      participantIdsByName: participantByName,
+      analysis,
+    });
+
     const { data: readyMeeting, error: readyError } = await supabase
       .from("meetings")
-      .update({ status: "ready", error_message: null })
-      .eq("id", meeting.id)
       .select("id, slug, title, status")
+      .eq("id", meeting.id)
       .single();
 
     if (readyError) throw readyError;
@@ -156,19 +183,24 @@ export async function POST(request: NextRequest) {
         meeting: readyMeeting,
         participantCount: participants.length,
         segmentCount: parsed.data.segments.length,
+        analysisProviders: analysis.providers,
       },
       { status: 201 },
     );
   } catch (error) {
     const message = errorMessage(error);
-    console.error(`[transcript-import] Failed to create meeting: ${message}`);
+    console.error(`[transcript-import] ${phase} failed: ${message}`);
 
     if (meetingId) {
+      await clearMeetingAnalysis(meetingId);
       const { error: statusError } = await supabase
         .from("meetings")
         .update({
           status: "failed",
-          error_message: "Transcript import failed before processing completed.",
+          error_message:
+            phase === "analysis"
+              ? "AI analysis could not complete safely."
+              : "Transcript import failed before processing completed.",
         })
         .eq("id", meetingId);
 
@@ -180,8 +212,13 @@ export async function POST(request: NextRequest) {
     }
 
     return Response.json(
-      { error: "The transcript could not be imported. Nothing is ready to review yet." },
-      { status: 500 },
+      {
+        error:
+          phase === "analysis"
+            ? "The transcript was imported, but AI analysis could not complete safely."
+            : "The transcript could not be imported. Nothing is ready to review yet.",
+      },
+      { status: phase === "analysis" ? 502 : 500 },
     );
   }
 }
