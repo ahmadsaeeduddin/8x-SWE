@@ -5,6 +5,7 @@ import { meetings as mockMeetings } from "@/lib/mock-meetings";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { DashboardStats, MeetingAccent, MeetingPreview } from "@/types/meeting";
 
+const DISPLAY_TIME_ZONE = "Asia/Karachi";
 const DEFAULT_WAVEFORMS = [
   [28, 45, 66, 38, 78, 52, 34, 72, 92, 48, 64, 36, 58, 84, 46, 70, 32, 56],
   [48, 34, 60, 88, 44, 72, 38, 58, 80, 54, 32, 66, 42, 74, 50, 90, 62, 36],
@@ -51,7 +52,7 @@ function formatDate(startsAt: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
-    timeZone: "UTC",
+    timeZone: DISPLAY_TIME_ZONE,
   }).format(new Date(startsAt));
 }
 
@@ -59,7 +60,7 @@ function formatTime(startsAt: string) {
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
-    timeZone: "UTC",
+    timeZone: DISPLAY_TIME_ZONE,
   }).format(new Date(startsAt));
 }
 

@@ -43,6 +43,7 @@ export type MeetingActionItem = {
   deadline: string;
   timestamp: string;
   timestampSeconds: number;
+  completed?: boolean;
 };
 
 export type MeetingHighlight = {
@@ -79,4 +80,5 @@ export type MeetingDetail = {
   actionItems: MeetingActionItem[];
   highlights: MeetingHighlight[];
   transcript: TranscriptSegment[];
+  shareToken?: string;
 };
