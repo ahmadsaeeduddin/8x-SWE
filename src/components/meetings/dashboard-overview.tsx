@@ -1,14 +1,46 @@
+import type { ReactNode } from "react";
 import { CalendarDays, ChevronDown, Clock3, Sparkles, UsersRound } from "lucide-react";
 import { MeetingCard } from "@/components/meetings/meeting-card";
-import type { MeetingPreview } from "@/types/meeting";
+import type { DashboardStats, MeetingPreview } from "@/types/meeting";
 
-const overviewStats = [
-  { label: "Meetings", value: "18", detail: "+3 this week", icon: UsersRound },
-  { label: "Time captured", value: "12.4h", detail: "8.1h saved", icon: Clock3 },
-  { label: "AI insights", value: "86", detail: "24 action items", icon: Sparkles },
-];
+function formatCapturedTime(totalSeconds: number) {
+  const hours = totalSeconds / 3600;
 
-export function DashboardOverview({ meetings }: { meetings: MeetingPreview[] }) {
+  if (hours < 1) {
+    return `${Math.round(totalSeconds / 60)}m`;
+  }
+
+  return `${hours.toFixed(1)}h`;
+}
+
+type DashboardOverviewProps = {
+  meetings: MeetingPreview[];
+  stats: DashboardStats;
+  meetingState?: ReactNode;
+};
+
+export function DashboardOverview({ meetings, stats, meetingState }: DashboardOverviewProps) {
+  const overviewStats = [
+    {
+      label: "Meetings",
+      value: String(stats.meetingCount),
+      detail: `${stats.readyCount} ready to review`,
+      icon: UsersRound,
+    },
+    {
+      label: "Time captured",
+      value: formatCapturedTime(stats.totalDurationSeconds),
+      detail: "across all meetings",
+      icon: Clock3,
+    },
+    {
+      label: "AI insights",
+      value: String(stats.insightCount),
+      detail: `${stats.actionItemCount} action items`,
+      icon: Sparkles,
+    },
+  ];
+
   return (
     <div className="mx-auto max-w-[1480px]">
       <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -71,11 +103,13 @@ export function DashboardOverview({ meetings }: { meetings: MeetingPreview[] }) 
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {meetings.map((meeting) => (
-            <MeetingCard key={meeting.id} meeting={meeting} />
-          ))}
-        </div>
+        {meetingState ?? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {meetings.map((meeting) => (
+              <MeetingCard key={meeting.id} meeting={meeting} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -1,0 +1,91 @@
+{
+  "meeting_id": "33333333-3333-3333-3333-333333333333",
+  "slug": "q4-go-to-market-sync",
+  "title": "Q4 go-to-market sync",
+  "segments": [
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 0,
+      "text": "Today I want us aligned on one Q4 launch story, the milestone sequence, and ownership.",
+      "end_time_seconds": 24
+    },
+    {
+      "speaker": "Lina",
+      "start_time_seconds": 24,
+      "text": "Marketing’s current draft focuses on AI features, but the stronger story is time saved after meetings.",
+      "end_time_seconds": 52
+    },
+    {
+      "speaker": "Bilal",
+      "start_time_seconds": 52,
+      "text": "Sales is hearing the same thing. Buyers care less about feature count and more about whether teams move faster.",
+      "end_time_seconds": 81
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 81,
+      "text": "Then let’s make measurable time saved from meetings the core narrative.",
+      "end_time_seconds": 106
+    },
+    {
+      "speaker": "Lina",
+      "start_time_seconds": 106,
+      "text": "I’ll update the campaign language around that.",
+      "end_time_seconds": 128
+    },
+    {
+      "speaker": "Bilal",
+      "start_time_seconds": 128,
+      "text": "For partner outreach, I need a short proof deck and a list of reference customers before I start.",
+      "end_time_seconds": 151
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 151,
+      "text": "Marketing owns campaign assets. Sales owns partner outreach.",
+      "end_time_seconds": 174
+    },
+    {
+      "speaker": "Lina",
+      "start_time_seconds": 174,
+      "text": "I’ll have the final campaign narrative ready by Tuesday noon.",
+      "end_time_seconds": 202
+    },
+    {
+      "speaker": "Bilal",
+      "start_time_seconds": 202,
+      "text": "I’ll prepare the partner outreach list by Wednesday noon.",
+      "end_time_seconds": 230
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 230,
+      "text": "We also need customer proof before the public launch.",
+      "end_time_seconds": 252
+    },
+    {
+      "speaker": "Lina",
+      "start_time_seconds": 252,
+      "text": "I can turn the strongest customer quotes into two short proof points.",
+      "end_time_seconds": 305
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 305,
+      "text": "Let’s require at least two customer proof points before public launch.",
+      "end_time_seconds": 331
+    },
+    {
+      "speaker": "Lina",
+      "start_time_seconds": 331,
+      "text": "Campaign assets should be finalized before partner outreach starts.",
+      "end_time_seconds": 378
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 378,
+      "text": "Then we have the narrative, the owners, and the milestone order locked.",
+      "end_time_seconds": null
+    }
+  ]
+}

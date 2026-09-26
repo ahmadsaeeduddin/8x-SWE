@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { EchoWaveBackground } from "@/components/layout/echo-wave-background";
-import type { MeetingDetail } from "@/types/meeting";
+import type { PublicSharedMeeting } from "@/types/meeting";
 
-export function PublicMeetingShare({ meeting }: { meeting: MeetingDetail }) {
+export function PublicMeetingShare({ meeting }: { meeting: PublicSharedMeeting }) {
   return (
     <div className="relative isolate min-h-screen overflow-x-clip">
       <EchoWaveBackground />
