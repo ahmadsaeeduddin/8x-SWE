@@ -5,6 +5,7 @@ import {
   Highlighter,
   MoreHorizontal,
 } from "lucide-react";
+import Link from "next/link";
 import type { MeetingAccent, MeetingPreview } from "@/types/meeting";
 
 const accentStyles: Record<MeetingAccent, { dot: string; bar: string; glow: string }> = {
@@ -119,13 +120,13 @@ export function MeetingCard({ meeting }: { meeting: MeetingPreview }) {
           <span className="hidden items-center gap-1.5 xl:flex">
             <Highlighter className="size-3.5" /> {meeting.highlights}
           </span>
-          <button
-            type="button"
+          <Link
+            href={`/meetings/${meeting.id}`}
             aria-label={`Open ${meeting.title}`}
             className="ml-1 flex size-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.035] text-white/45 transition-colors group-hover:border-white/[0.14] group-hover:bg-white/[0.07] group-hover:text-white"
           >
             <ArrowUpRight className="size-3.5" />
-          </button>
+          </Link>
         </div>
       </div>
     </article>

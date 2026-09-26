@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   AudioLines,
   BookOpenText,
@@ -79,6 +80,8 @@ function clampPosition(point: Point, viewport: typeof DEFAULT_VIEWPORT, radialSa
 
 function NavigationButton({ item, compact }: { item: NavigationItem; compact: boolean }) {
   const Icon = item.icon;
+  const pathname = usePathname();
+  const isActive = item.label === "Overview" ? pathname === "/" : item.label === "Meetings" && pathname.startsWith("/meetings");
 
   return (
     <button
@@ -88,14 +91,14 @@ function NavigationButton({ item, compact }: { item: NavigationItem; compact: bo
       className={`group flex h-10 w-full items-center rounded-xl text-sm transition-colors ${
         compact ? "justify-center px-0" : "gap-3 px-3"
       } ${
-        item.active
+        isActive
           ? "bg-white/[0.07] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035)]"
           : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
       }`}
     >
       <Icon
         className={`size-[17px] shrink-0 transition-colors ${
-          item.active ? "text-[#ff7a1a]" : "text-white/35 group-hover:text-white/65"
+          isActive ? "text-[#ff7a1a]" : "text-white/35 group-hover:text-white/65"
         }`}
         strokeWidth={1.8}
       />
