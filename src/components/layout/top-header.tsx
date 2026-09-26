@@ -1,7 +1,8 @@
 import { Bell, Plus } from "lucide-react";
+import Link from "next/link";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { GlobalSearch } from "@/components/search/global-search";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export function TopHeader() {
   return (
@@ -22,11 +23,17 @@ export function TopHeader() {
             <Bell className="size-[17px]" strokeWidth={1.8} />
             <span className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-[#ff7a1a] ring-2 ring-[#0a0a0f]" />
           </button>
-          <Button className="h-10 rounded-xl bg-[#ff7a1a] px-3.5 text-xs font-semibold text-[#0a0a0f] shadow-[0_8px_28px_rgba(255,122,26,0.2)] hover:bg-[#ff8b38] sm:px-4 sm:text-sm">
+          <Link
+            href="/meetings/new"
+            className={buttonVariants({
+              className:
+                "h-10 rounded-xl bg-[#ff7a1a] px-3.5 text-xs font-semibold text-[#0a0a0f] shadow-[0_8px_28px_rgba(255,122,26,0.2)] hover:bg-[#ff8b38] sm:px-4 sm:text-sm",
+            })}
+          >
             <Plus className="size-4" strokeWidth={2.2} />
             <span className="hidden min-[420px]:inline">New meeting</span>
             <span className="min-[420px]:hidden">New</span>
-          </Button>
+          </Link>
           <button
             type="button"
             aria-label="Open profile"

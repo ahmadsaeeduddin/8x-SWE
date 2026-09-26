@@ -1,0 +1,85 @@
+{
+  "meeting_id": "33333333-3333-3333-3333-333333333333",
+  "slug": "product-discussion-september-26",
+  "title": "Product Discussion - September 26",
+  "segments": [
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 0,
+      "text": "Hello, let's quickly go over the release plan for the new product. Are we still forgetting? Are we still targeting Friday?",
+      "end_time_seconds": 16
+    },
+    {
+      "speaker": "Sabiha",
+      "start_time_seconds": 16,
+      "text": "Ah, yes. Friday still looks realistic. The backend is mostly complete, but we need final testing before we push anything to production.",
+      "end_time_seconds": 30
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 30,
+      "text": "Okay, then let's make a decision now. We will keep Friday as the release date, provided QA is completed by Thursday evening.",
+      "end_time_seconds": 44
+    },
+    {
+      "speaker": "Sabiha",
+      "start_time_seconds": 44,
+      "text": "Yeah, sure. Why not? I will take ownership of the final backend test. And make sure it is done by Thursday at 5 p.m.",
+      "end_time_seconds": 57
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 57,
+      "text": "Perfect. I will hand it a deployment checklist and release notes. I will have those ready by Thursday afternoon. Okay, perfect.",
+      "end_time_seconds": 74
+    },
+    {
+      "speaker": "Sabiha",
+      "start_time_seconds": 74,
+      "text": "One concern is that our mobile experience. The latest build still has small layout issues on the meeting summary screen.",
+      "end_time_seconds": 91
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 91,
+      "text": "Tomorrow evening.",
+      "end_time_seconds": 96
+    },
+    {
+      "speaker": "Sabiha",
+      "start_time_seconds": 96,
+      "text": "Yeah, sure, why not. I will fix the mobile layout issue by Wednesday evening and send you the updated build.",
+      "end_time_seconds": 108
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 108,
+      "text": "Great. Also, one another thing, we should avoid releasing directory to everyone. Let's first roll it out to around 10% of users, monitor error for a few hours, and then expand the rollout.",
+      "end_time_seconds": 129
+    },
+    {
+      "speaker": "Sabiha",
+      "start_time_seconds": 129,
+      "text": "Yeah, this definitely makes sense. If the error rate is normal, we can move to full release the same day as well.",
+      "end_time_seconds": 142
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 142,
+      "text": "Exactly. So the final plan is mobile fix by Wednesday, QA by Thursday 5 p.m., release notes and deployment checklist by Thursday afternoon, and then a stage release on Friday.",
+      "end_time_seconds": 163
+    },
+    {
+      "speaker": "Sabiha",
+      "start_time_seconds": 163,
+      "text": "Yeah, sounds wonderful. I will also monitor the logs after deployment and... Tag Anything Unusual.",
+      "end_time_seconds": 177
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 177,
+      "text": "Perfect. That covers everything. Let's proceed with Fridays as the target raise date. Thanks.",
+      "end_time_seconds": null
+    }
+  ]
+}
