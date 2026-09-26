@@ -108,6 +108,26 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
     return () => window.clearInterval(timer);
   }, [isPlaying, meeting.durationSeconds]);
 
+  useEffect(() => {
+    const openTranscriptMatch = () => {
+      const segmentId = window.location.hash.slice(1);
+      if (!segmentId) return;
+
+      const segment = meeting.transcript.find((item) => item.id === segmentId);
+      if (!segment) return;
+
+      setActiveTab("transcript");
+      setCurrentTime(segment.timestampSeconds);
+      window.setTimeout(() => {
+        document.getElementById(segment.id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+    };
+
+    openTranscriptMatch();
+    window.addEventListener("hashchange", openTranscriptMatch);
+    return () => window.removeEventListener("hashchange", openTranscriptMatch);
+  }, [meeting.transcript]);
+
   const activeTranscriptId = useMemo(() => {
     return [...meeting.transcript]
       .reverse()
@@ -477,6 +497,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                 return (
                   <article
                     key={segment.id}
+                    id={segment.id}
                     className={`grid gap-3 py-5 transition-colors sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-6 ${
                       isActive ? "-mx-5 bg-[#ff7a1a]/[0.045] px-5 sm:-mx-6 sm:px-6" : ""
                     }`}

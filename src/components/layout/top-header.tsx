@@ -1,5 +1,6 @@
-import { Bell, Command, Plus, Search } from "lucide-react";
+import { Bell, Plus } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
+import { GlobalSearch } from "@/components/search/global-search";
 import { Button } from "@/components/ui/button";
 
 export function TopHeader() {
@@ -10,18 +11,7 @@ export function TopHeader() {
           <BrandMark />
         </div>
 
-        <label className="order-3 flex h-11 w-full items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.035] px-3.5 transition-colors focus-within:border-white/[0.16] focus-within:bg-white/[0.05] sm:order-none sm:max-w-md lg:max-w-lg">
-          <Search className="size-[17px] shrink-0 text-white/30" strokeWidth={1.8} />
-          <span className="sr-only">Search meetings</span>
-          <input
-            type="search"
-            placeholder="Search meetings, people, or topics..."
-            className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/28"
-          />
-          <span className="font-label hidden items-center gap-1 rounded-md border border-white/10 bg-black/20 px-1.5 py-1 text-[8px] text-white/28 min-[420px]:flex">
-            <Command className="size-2.5" /> K
-          </span>
-        </label>
+        <GlobalSearch />
 
         <div className="ml-auto flex items-center gap-2.5">
           <button
