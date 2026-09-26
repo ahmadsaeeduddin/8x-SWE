@@ -19,12 +19,13 @@ import {
   RotateCcw,
   Search,
   Send,
-  Share2,
   Sparkles,
   UsersRound,
   Volume2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { ShareMeetingButton } from "@/components/meetings/share-meeting-button";
+import { PRODUCT_DESIGN_REVIEW_SHARE_TOKEN } from "@/lib/share-token";
 import type { MeetingDetail as MeetingDetailType } from "@/types/meeting";
 
 type MeetingTab = "summary" | "transcript" | "ask-ai";
@@ -181,12 +182,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 text-xs font-medium text-white/55 transition-colors hover:bg-white/[0.07] hover:text-white"
-          >
-            <Share2 className="size-3.5" /> Share
-          </button>
+          <ShareMeetingButton token={PRODUCT_DESIGN_REVIEW_SHARE_TOKEN} />
           <button
             type="button"
             aria-label="More meeting options"
