@@ -1,0 +1,29 @@
+{
+  "description": "Capture 8x assignment prompts and final responses only.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File \"D:\\Projects-Personal\\8x-SWE\\.codex\\hooks\\capture-turn.ps1\"",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"D:\\Projects-Personal\\8x-SWE\\.codex\\hooks\\capture-turn.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File \"D:\\Projects-Personal\\8x-SWE\\.codex\\hooks\\capture-turn.ps1\"",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"D:\\Projects-Personal\\8x-SWE\\.codex\\hooks\\capture-turn.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
