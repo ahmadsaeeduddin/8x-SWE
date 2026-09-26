@@ -8,8 +8,7 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 |---|---|
 | Web app | Next.js (App Router) + TypeScript |
 | UI | Tailwind CSS + reusable React components |
-| Primary analysis | OpenAI API |
-| Analysis fallback | Google Gemini API |
+| AI analysis | OpenAI API |
 | Speech-to-text | Groq Whisper or another free-tier STT provider |
 | Database | Supabase PostgreSQL |
 | File storage | Supabase Storage |
@@ -20,7 +19,7 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 1. User opens a seeded meeting or uploads audio/video or a demo transcript.
 2. Media is stored in Supabase Storage and meeting metadata in PostgreSQL.
 3. Uploaded media is transcribed; supplied transcripts skip STT.
-4. OpenAI generates structured meeting insights, with Gemini as the fallback.
+4. OpenAI generates validated, structured meeting insights.
 5. Validated results are stored and shown on the meeting detail and share pages.
 6. Search uses meeting titles and transcript text stored in PostgreSQL.
 
@@ -35,7 +34,7 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 
 - Next.js Server Components load page data.
 - Route Handlers manage uploads, processing, search, media access, and sharing.
-- A typed AI service wraps OpenAI and Gemini.
+- A typed AI service wraps OpenAI structured outputs.
 - A typed STT service wraps Groq Whisper or a replacement provider.
 - Supabase and AI credentials remain server-only.
 - Processing states: `uploaded`, `transcribing`, `analyzing`, `ready`, and `failed`.
@@ -55,8 +54,8 @@ PostgreSQL full-text indexes cover meeting titles and transcript text.
 
 1. Validate and upload media to Supabase Storage.
 2. Transcribe with Groq Whisper and normalize timestamped segments.
-3. Send one meeting transcript to OpenAI using a strict structured-output schema.
-4. Use Gemini only when the primary analysis fails.
+3. Run three focused structured-output calls for understanding, action items, and highlights.
+4. Each call uses the original transcript and OpenAI structured output.
 5. Validate before saving; unknown owners, deadlines, or timestamps remain empty.
 
 # Main project folder structure
@@ -73,7 +72,7 @@ src/
     transcript/
     ui/
   lib/
-    ai/                       # OpenAI + Gemini fallback
+    ai/                       # OpenAI analysis pipeline
     stt/                      # Groq Whisper adapter
     supabase/                 # Database and storage clients
     validation/               # Input and AI-output schemas
