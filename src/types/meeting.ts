@@ -82,3 +82,18 @@ export type MeetingDetail = {
   transcript: TranscriptSegment[];
   shareToken?: string;
 };
+
+export type PublicSharedMeeting = Pick<
+  MeetingDetail,
+  | "id"
+  | "title"
+  | "date"
+  | "time"
+  | "duration"
+  | "participants"
+  | "purpose"
+  | "takeaways"
+  | "decisions"
+  | "actionItems"
+  | "highlights"
+>;

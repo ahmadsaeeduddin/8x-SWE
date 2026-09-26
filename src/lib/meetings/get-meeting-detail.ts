@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { connection } from "next/server";
-import { PRODUCT_DESIGN_REVIEW_SHARE_TOKEN } from "@/lib/share-token";
+import { SEEDED_MEETING_SHARE_TOKENS } from "@/lib/share-token";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { MeetingDetail } from "@/types/meeting";
 
@@ -214,7 +214,6 @@ export const getMeetingDetail = cache(async (slug: string): Promise<MeetingDetai
         timestampSeconds: segment.start_seconds,
         text: segment.text,
       })),
-    shareToken:
-      meeting.slug === "product-design-review" ? PRODUCT_DESIGN_REVIEW_SHARE_TOKEN : undefined,
+    shareToken: SEEDED_MEETING_SHARE_TOKENS[meeting.slug],
   };
 });
