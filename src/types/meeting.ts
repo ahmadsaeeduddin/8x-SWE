@@ -22,6 +22,14 @@ export type MeetingPreview = {
   waveform: number[];
 };
 
+export type DashboardStats = {
+  meetingCount: number;
+  totalDurationSeconds: number;
+  insightCount: number;
+  actionItemCount: number;
+  readyCount: number;
+};
+
 export type MeetingDetailParticipant = MeetingParticipant & {
   role: string;
 };

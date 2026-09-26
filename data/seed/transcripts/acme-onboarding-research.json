@@ -1,0 +1,85 @@
+{
+  "meeting_id": "22222222-2222-2222-2222-222222222222",
+  "slug": "acme-onboarding-research",
+  "title": "Acme onboarding research",
+  "segments": [
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 0,
+      "text": "Let’s go through the Acme onboarding research and focus on the biggest friction points.",
+      "end_time_seconds": 22
+    },
+    {
+      "speaker": "Nora",
+      "start_time_seconds": 22,
+      "text": "The clearest issue was team invitations. Several people were unsure whether they had successfully invited a teammate.",
+      "end_time_seconds": 46
+    },
+    {
+      "speaker": "Omar",
+      "start_time_seconds": 46,
+      "text": "We also saw users land in an empty workspace and hesitate because they didn’t know what to do first.",
+      "end_time_seconds": 66
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 66,
+      "text": "So invites are the first problem, and the second is the empty first-run experience.",
+      "end_time_seconds": 87
+    },
+    {
+      "speaker": "Nora",
+      "start_time_seconds": 87,
+      "text": "People responded much better when we showed them an example workspace with a few guided steps.",
+      "end_time_seconds": 113
+    },
+    {
+      "speaker": "Omar",
+      "start_time_seconds": 113,
+      "text": "I think we should cut the onboarding checklist down. Five steps feels heavy before users see value.",
+      "end_time_seconds": 138
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 138,
+      "text": "Let’s make it three steps: create workspace, invite teammate, choose a starter template.",
+      "end_time_seconds": 162
+    },
+    {
+      "speaker": "Nora",
+      "start_time_seconds": 162,
+      "text": "I’ll prototype a guided setup flow using those three steps.",
+      "end_time_seconds": 185
+    },
+    {
+      "speaker": "Omar",
+      "start_time_seconds": 185,
+      "text": "I can update the first-run checklist and remove the lower-value setup tasks.",
+      "end_time_seconds": 208
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 208,
+      "text": "For the next research session, let’s compare the simple checklist against the guided flow.",
+      "end_time_seconds": 231
+    },
+    {
+      "speaker": "Nora",
+      "start_time_seconds": 231,
+      "text": "We should track whether users reach their first useful meeting recap faster.",
+      "end_time_seconds": 254
+    },
+    {
+      "speaker": "Omar",
+      "start_time_seconds": 254,
+      "text": "And measure invite completion separately because that’s clearly a drop-off point.",
+      "end_time_seconds": 277
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 277,
+      "text": "Great. Let’s run that follow-up usability test next week.",
+      "end_time_seconds": null
+    }
+  ]
+}
