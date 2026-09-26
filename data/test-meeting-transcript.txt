@@ -1,0 +1,71 @@
+Meeting Title: Product Release Planning
+Date: 2026-09-26
+Duration: 12 minutes
+Participants: Saeed, Ahmed
+
+[00:00] Saeed:
+Let’s finalize the release plan for the new product update. Are we still targeting Friday?
+
+[00:18] Ahmed:
+Yes, Friday still looks realistic. The backend is mostly complete, but we need final QA before production.
+
+[00:37] Saeed:
+Okay, then Friday stays as the target release date, provided QA is completed by Thursday at 5 PM.
+
+[00:53] Ahmed:
+Agreed. I’ll take ownership of the final backend testing and finish it by Thursday at 5 PM.
+
+[01:15] Saeed:
+I’ll prepare the deployment checklist and release notes by Thursday afternoon.
+
+[01:32] Ahmed:
+One concern is the mobile meeting summary screen. The latest build still has a layout issue.
+
+[01:49] Saeed:
+Let’s treat that as a release blocker. Can you fix it by Wednesday evening?
+
+[02:03] Ahmed:
+Yes. I’ll fix the mobile layout issue by Wednesday evening and send the updated build.
+
+[02:27] Saeed:
+For rollout, I don’t want to release to everyone immediately. Let’s start with 10 percent of users and monitor errors for a few hours.
+
+[02:46] Ahmed:
+Makes sense. If the error rate stays normal, we can move to full release the same day.
+
+[03:05] Saeed:
+Good. So the release plan is: mobile fix by Wednesday evening, QA by Thursday 5 PM, deployment checklist and release notes by Thursday afternoon, and staged release on Friday.
+
+[03:25] Ahmed:
+I’ll also monitor production logs after deployment and flag anything unusual.
+
+[03:43] Saeed:
+Perfect. Friday remains the target release date.
+
+[04:02] Ahmed:
+One more thing. Search should work across meeting titles and transcript content so people can quickly find decisions later.
+
+[04:19] Saeed:
+Agreed. That should stay in scope for the first release.
+
+[04:35] Ahmed:
+For sharing, the public meeting page should be read-only and should not require login.
+
+[04:50] Saeed:
+Yes. We’ll use an unguessable share token and expose only the meeting recap, action items, and highlights.
+
+[05:12] Ahmed:
+Anything else before we close?
+
+[05:18] Saeed:
+No. The main priority is to make sure the core meeting experience works reliably before adding extra integrations.
+
+Expected test facts:
+- Target release date: Friday
+- QA deadline: Thursday at 5 PM
+- Deployment checklist + release notes owner: Saeed
+- Backend testing owner: Ahmed
+- Mobile layout fix deadline: Wednesday evening
+- Initial rollout size: 10 percent of users
+- Search must cover meeting titles and transcript content
+- Public share page is read-only and does not require login
