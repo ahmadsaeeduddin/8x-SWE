@@ -1,0 +1,1 @@
+-- Seed data will be added with the meeting feature implementation.
