@@ -1,28 +1,25 @@
 import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
+import { analyzeTranscript } from "@/lib/ai/analyze-transcript";
+import { saveMeetingAnalysis } from "@/lib/ai/save-meeting-analysis";
+import {
+  getAudioExtension,
+  getAudioMimeType,
+  validateAudioFile,
+  validateTranscriptAgainstAudio,
+} from "@/lib/audio/upload-validation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   MAX_TRANSCRIPT_FILE_BYTES,
   parseTranscriptFile,
 } from "@/lib/transcripts/parse-transcript";
-import { createAdminClient } from "@/lib/supabase/admin";
 
-const AVATAR_COLORS = [
-  "#f18f62",
-  "#6b9bd2",
-  "#9b7bd8",
-  "#58b8ba",
-  "#cd7fae",
-  "#6baf8e",
-];
+const RECORDING_BUCKET = "meeting-recordings";
+const AVATAR_COLORS = ["#f18f62", "#6b9bd2", "#9b7bd8", "#58b8ba", "#cd7fae", "#6baf8e"];
+type ImportMode = "transcript" | "audio-transcript";
 
 function initialsFor(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 3)
-    .toUpperCase();
+  return name.trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 3).toUpperCase();
 }
 
 function slugify(value: string) {
@@ -34,39 +31,51 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "")
     .slice(0, 70)
     .replace(/-$/g, "");
-
   return base || "meeting";
 }
 
 function errorMessage(error: unknown) {
   return error && typeof error === "object" && "message" in error
     ? String(error.message)
-    : "Unknown transcript import error";
+    : "Unknown meeting import error";
+}
+
+function parseMode(value: FormDataEntryValue | null): ImportMode | null {
+  return value === "transcript" || value === "audio-transcript" ? value : null;
+}
+
+function parseAudioDuration(value: FormDataEntryValue | null) {
+  if (value === null || typeof value !== "string" || value === "") return null;
+  const duration = Number(value);
+  return Number.isFinite(duration) && duration > 0 ? duration : undefined;
 }
 
 export async function POST(request: NextRequest) {
   let formData: FormData;
-
   try {
     formData = await request.formData();
   } catch {
-    return Response.json({ error: "A multipart transcript upload is required." }, { status: 400 });
+    return Response.json({ error: "A multipart meeting import is required." }, { status: 400 });
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File)) {
+  const mode = parseMode(formData.get("mode"));
+  if (!mode) {
+    return Response.json({ error: "Choose transcript only or audio + transcript." }, { status: 400 });
+  }
+
+  const transcriptFile = formData.get("transcript") ?? formData.get("file");
+  if (!(transcriptFile instanceof File)) {
     return Response.json({ error: "Choose a .txt or .json transcript file." }, { status: 400 });
   }
-
-  if (file.size === 0) {
+  if (transcriptFile.size === 0) {
     return Response.json({ error: "The transcript file is empty." }, { status: 400 });
   }
-
-  if (file.size > MAX_TRANSCRIPT_FILE_BYTES) {
+  if (transcriptFile.size > MAX_TRANSCRIPT_FILE_BYTES) {
     return Response.json({ error: "The transcript file must be 2 MB or smaller." }, { status: 413 });
   }
 
-  const parsed = parseTranscriptFile(file.name, await file.text());
+  // The transcript is always validated first and remains the source of truth.
+  const parsed = parseTranscriptFile(transcriptFile.name, await transcriptFile.text());
   if (!parsed.success) {
     return Response.json(
       { error: `${parsed.error} Upload canceled—check the accepted format and try again.` },
@@ -74,9 +83,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const audioEntry = formData.get("audio");
+  const audioFile = audioEntry instanceof File ? audioEntry : null;
+  const audioDuration = parseAudioDuration(formData.get("audioDurationSeconds"));
+
+  if (mode === "audio-transcript" && !audioFile) {
+    return Response.json({ error: "Audio + transcript mode requires both files." }, { status: 400 });
+  }
+  if (mode === "transcript" && audioFile) {
+    return Response.json({ error: "Audio is only accepted in audio + transcript mode." }, { status: 400 });
+  }
+  if (audioDuration === undefined) {
+    return Response.json({ error: "The supplied audio duration is invalid." }, { status: 400 });
+  }
+
+  if (audioFile) {
+    const audioError = validateAudioFile(audioFile);
+    if (audioError) return Response.json({ error: audioError }, { status: 400 });
+    if (audioDuration !== null) {
+      const durationError = validateTranscriptAgainstAudio(parsed.data.durationSeconds, audioDuration);
+      if (durationError) return Response.json({ error: durationError }, { status: 400 });
+    }
+  }
+
   const supabase = createAdminClient();
   const slug = `${slugify(parsed.data.title)}-${randomUUID().slice(0, 8)}`;
+  const effectiveDuration = audioDuration
+    ? Math.max(parsed.data.durationSeconds, Math.round(audioDuration))
+    : parsed.data.durationSeconds;
   let meetingId: string | null = null;
+  let uploadedStoragePath: string | null = null;
+  let recordingCreated = false;
 
   try {
     const { data: meeting, error: meetingError } = await supabase
@@ -86,15 +123,14 @@ export async function POST(request: NextRequest) {
         title: parsed.data.title,
         short_summary: null,
         starts_at: parsed.data.startsAt ?? new Date().toISOString(),
-        duration_seconds: parsed.data.durationSeconds,
+        duration_seconds: effectiveDuration,
         status: "uploaded",
-        source: "transcript",
+        source: audioFile ? "upload" : "transcript",
         visibility: "private",
         accent: "orange",
       })
       .select("id, slug, title")
       .single();
-
     if (meetingError) throw meetingError;
     meetingId = meeting.id;
 
@@ -108,30 +144,25 @@ export async function POST(request: NextRequest) {
         })),
       )
       .select("id, name");
-
     if (participantError) throw participantError;
 
     const participantByName = new Map(
       participants.map((participant) => [participant.name.toLocaleLowerCase(), participant.id]),
     );
-    const { error: meetingParticipantError } = await supabase
-      .from("meeting_participants")
-      .insert(
-        participants.map((participant, index) => ({
-          meeting_id: meeting.id,
-          participant_id: participant.id,
-          role: index === 0 ? "Host" : "Participant",
-          sort_order: index,
-        })),
-      );
-
+    const { error: meetingParticipantError } = await supabase.from("meeting_participants").insert(
+      participants.map((participant, index) => ({
+        meeting_id: meeting.id,
+        participant_id: participant.id,
+        role: index === 0 ? "Host" : "Participant",
+        sort_order: index,
+      })),
+    );
     if (meetingParticipantError) throw meetingParticipantError;
 
     const { error: transcriptError } = await supabase.from("transcript_segments").insert(
       parsed.data.segments.map((segment, index) => ({
         meeting_id: meeting.id,
-        speaker_participant_id:
-          participantByName.get(segment.speaker.toLocaleLowerCase()) ?? null,
+        speaker_participant_id: participantByName.get(segment.speaker.toLocaleLowerCase()) ?? null,
         speaker_name: segment.speaker,
         start_seconds: segment.startSeconds,
         end_seconds: segment.endSeconds,
@@ -139,48 +170,80 @@ export async function POST(request: NextRequest) {
         sort_order: index,
       })),
     );
-
     if (transcriptError) throw transcriptError;
 
-    const { data: readyMeeting, error: readyError } = await supabase
-      .from("meetings")
-      .update({ status: "ready", error_message: null })
-      .eq("id", meeting.id)
-      .select("id, slug, title, status")
-      .single();
+    if (audioFile) {
+      const extension = getAudioExtension(audioFile.name);
+      const audioMimeType = getAudioMimeType(audioFile);
+      uploadedStoragePath = `${meeting.id}/${randomUUID()}.${extension}`;
+      const { error: storageError } = await supabase.storage
+        .from(RECORDING_BUCKET)
+        .upload(uploadedStoragePath, audioFile, {
+          cacheControl: "3600",
+          contentType: audioMimeType,
+          upsert: false,
+        });
+      if (storageError) throw storageError;
 
-    if (readyError) throw readyError;
+      const { error: recordingError } = await supabase.from("recordings").insert({
+        meeting_id: meeting.id,
+        storage_bucket: RECORDING_BUCKET,
+        storage_path: uploadedStoragePath,
+        mime_type: audioMimeType,
+        file_size_bytes: audioFile.size,
+        duration_seconds: audioDuration ? Math.round(audioDuration) : null,
+        waveform: [],
+        is_primary: true,
+      });
+      if (recordingError) throw recordingError;
+      recordingCreated = true;
+    }
+
+    const { error: analyzingError } = await supabase
+      .from("meetings")
+      .update({ status: "analyzing", error_message: null })
+      .eq("id", meeting.id);
+    if (analyzingError) throw analyzingError;
+
+    const analysis = await analyzeTranscript({ ...parsed.data, durationSeconds: effectiveDuration });
+    await saveMeetingAnalysis(meeting.id, participantByName, analysis);
 
     return Response.json(
       {
-        meeting: readyMeeting,
+        meeting: { ...meeting, status: "ready" },
         participantCount: participants.length,
         segmentCount: parsed.data.segments.length,
+        hasAudio: Boolean(audioFile),
       },
       { status: 201 },
     );
   } catch (error) {
-    const message = errorMessage(error);
-    console.error(`[transcript-import] Failed to create meeting: ${message}`);
+    console.error(`[meeting-import] Failed to process meeting: ${errorMessage(error)}`);
+
+    if (uploadedStoragePath && !recordingCreated) {
+      const { error: cleanupError } = await supabase.storage
+        .from(RECORDING_BUCKET)
+        .remove([uploadedStoragePath]);
+      if (cleanupError) console.error(`[meeting-import] Failed to clean up audio: ${cleanupError.message}`);
+    }
 
     if (meetingId) {
+      await Promise.all([
+        supabase.from("summaries").delete().eq("meeting_id", meetingId),
+        supabase.from("action_items").delete().eq("meeting_id", meetingId),
+        supabase.from("highlights").delete().eq("meeting_id", meetingId),
+      ]);
       const { error: statusError } = await supabase
         .from("meetings")
-        .update({
-          status: "failed",
-          error_message: "Transcript import failed before processing completed.",
-        })
+        .update({ status: "failed", error_message: "Meeting analysis failed before processing completed." })
         .eq("id", meetingId);
-
       if (statusError) {
-        console.error(
-          `[transcript-import] Failed to mark meeting ${meetingId} as failed: ${statusError.message}`,
-        );
+        console.error(`[meeting-import] Failed to mark meeting ${meetingId} as failed: ${statusError.message}`);
       }
     }
 
     return Response.json(
-      { error: "The transcript could not be imported. Nothing is ready to review yet." },
+      { error: "The meeting could not be analyzed safely. Its status was set to failed." },
       { status: 500 },
     );
   }

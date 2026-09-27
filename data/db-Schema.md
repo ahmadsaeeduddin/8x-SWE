@@ -58,7 +58,7 @@ The function is server-only for now. The current mock search remains unchanged u
 - All table access is revoked from `anon` and `authenticated` in the initial migration because ownership/authentication is not in scope yet.
 - Only the server secret role can access these tables at this stage. Never expose `SUPABASE_SECRET_KEY` to browser code.
 
-No Storage bucket or Storage policy is created yet. `recordings` only defines the metadata contract needed when the upload/STT work begins.
+The private `meeting-recordings` Storage bucket accepts supported audio files up to 50 MB. Uploads use the server-only service role; playback uses short-lived signed URLs, so no anonymous Storage policy is required.
 
 ## Supabase helpers
 
@@ -78,14 +78,17 @@ Copy `.env.local.example` to `.env.local` manually and provide:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SECRET_KEY
+OPENAI_API_KEY
+OPENAI_ANALYSIS_MODEL
 ```
 
-Only the first two variables may appear in browser code.
+Only the two `NEXT_PUBLIC_` variables may appear in browser code.
 
 ## Migration files
 
 1. `202609260001_initial_meeting_schema.sql` creates tables, constraints, indexes, update triggers, RLS, and least-privilege grants.
 2. `202609260002_meeting_search_function.sql` creates the ranked server-only search function.
+3. `202609270003_meeting_recordings_bucket.sql` creates the private audio playback bucket and its type/size limits.
 
 Review and apply these migrations manually through your chosen Supabase workflow. They have not been executed by the agent.
 

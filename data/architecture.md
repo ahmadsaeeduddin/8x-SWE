@@ -9,18 +9,16 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 | Web app | Next.js (App Router) + TypeScript |
 | UI | Tailwind CSS + reusable React components |
 | Primary analysis | OpenAI API |
-| Analysis fallback | Google Gemini API |
-| Speech-to-text | Groq Whisper or another free-tier STT provider |
 | Database | Supabase PostgreSQL |
 | File storage | Supabase Storage |
 | Deployment | Vercel |
 
 # High-level system flow
 
-1. User opens a seeded meeting or uploads audio/video or a demo transcript.
-2. Media is stored in Supabase Storage and meeting metadata in PostgreSQL.
-3. Uploaded media is transcribed; supplied transcripts skip STT.
-4. OpenAI generates structured meeting insights, with Gemini as the fallback.
+1. User opens a seeded meeting or imports a transcript, optionally paired with playback audio.
+2. The transcript is validated; paired audio is checked against its timestamps where possible.
+3. Paired audio is stored privately in Supabase Storage and meeting data in PostgreSQL.
+4. OpenAI generates validated, structured meeting insights from the transcript.
 5. Validated results are stored and shown on the meeting detail and share pages.
 6. Search uses meeting titles and transcript text stored in PostgreSQL.
 
@@ -35,10 +33,9 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 
 - Next.js Server Components load page data.
 - Route Handlers manage uploads, processing, search, media access, and sharing.
-- A typed AI service wraps OpenAI and Gemini.
-- A typed STT service wraps Groq Whisper or a replacement provider.
+- A typed AI service wraps OpenAI structured outputs.
 - Supabase and AI credentials remain server-only.
-- Processing states: `uploaded`, `transcribing`, `analyzing`, `ready`, and `failed`.
+- Import processing states: `uploaded`, `analyzing`, `ready`, and `failed`.
 
 # Database structure
 
@@ -51,13 +48,12 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 
 PostgreSQL full-text indexes cover meeting titles and transcript text.
 
-# AI/STT flow
+# Import and AI flow
 
-1. Validate and upload media to Supabase Storage.
-2. Transcribe with Groq Whisper and normalize timestamped segments.
-3. Send one meeting transcript to OpenAI using a strict structured-output schema.
-4. Use Gemini only when the primary analysis fails.
-5. Validate before saving; unknown owners, deadlines, or timestamps remain empty.
+1. Validate a required TXT/JSON transcript and optional paired playback audio.
+2. Store paired audio in private Supabase Storage; the transcript remains authoritative.
+3. Run focused OpenAI structured-output calls for understanding, actions, and highlights.
+4. Validate before saving; unknown owners, deadlines, or timestamps remain empty.
 
 # Main project folder structure
 
@@ -73,8 +69,7 @@ src/
     transcript/
     ui/
   lib/
-    ai/                       # OpenAI + Gemini fallback
-    stt/                      # Groq Whisper adapter
+    ai/                       # OpenAI analysis pipeline
     supabase/                 # Database and storage clients
     validation/               # Input and AI-output schemas
   types/
