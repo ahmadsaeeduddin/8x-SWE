@@ -1,0 +1,103 @@
+{
+  "meeting_id": "11111111-1111-1111-1111-111111111111",
+  "slug": "product-design-review",
+  "title": "Product design review",
+  "segments": [
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 0,
+      "text": "Let’s finalize the release plan. Are we still comfortable targeting Friday?",
+      "end_time_seconds": 18
+    },
+    {
+      "speaker": "Ahmed",
+      "start_time_seconds": 18,
+      "text": "Yes. Backend work is mostly complete, but final QA still needs to happen before production.",
+      "end_time_seconds": 37
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 37,
+      "text": "Then Friday stays as the target release date as long as QA is completed by Thursday at 5 PM.",
+      "end_time_seconds": 53
+    },
+    {
+      "speaker": "Ahmed",
+      "start_time_seconds": 53,
+      "text": "Agreed. I’ll own the final backend testing and finish it by Thursday at 5 PM.",
+      "end_time_seconds": 75
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 75,
+      "text": "I’ll prepare the deployment checklist and release notes by Thursday afternoon.",
+      "end_time_seconds": 92
+    },
+    {
+      "speaker": "Ahmed",
+      "start_time_seconds": 92,
+      "text": "One concern is the mobile meeting summary screen. The latest build still has a layout issue.",
+      "end_time_seconds": 109
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 109,
+      "text": "Let’s treat that as a release blocker. Can you fix it by Wednesday evening?",
+      "end_time_seconds": 123
+    },
+    {
+      "speaker": "Ahmed",
+      "start_time_seconds": 123,
+      "text": "Yes. I’ll fix the mobile layout issue by Wednesday evening and send the updated build.",
+      "end_time_seconds": 147
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 147,
+      "text": "For rollout, let’s start with 10 percent of users and monitor errors for a few hours.",
+      "end_time_seconds": 166
+    },
+    {
+      "speaker": "Maya",
+      "start_time_seconds": 166,
+      "text": "We should also watch completion rates and session errors during the first rollout.",
+      "end_time_seconds": 185
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 185,
+      "text": "If those metrics stay normal, we can expand to the full user base the same day.",
+      "end_time_seconds": 205
+    },
+    {
+      "speaker": "Ahmed",
+      "start_time_seconds": 205,
+      "text": "I’ll monitor production logs after deployment and flag anything unusual.",
+      "end_time_seconds": 242
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 242,
+      "text": "Search should work across meeting titles and transcript content for the first release.",
+      "end_time_seconds": 275
+    },
+    {
+      "speaker": "Maya",
+      "start_time_seconds": 275,
+      "text": "Public sharing should remain read-only and should not require login.",
+      "end_time_seconds": 290
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 290,
+      "text": "Yes. We’ll expose only the recap, action items, and highlights behind an unguessable share token.",
+      "end_time_seconds": 318
+    },
+    {
+      "speaker": "Saeed",
+      "start_time_seconds": 318,
+      "text": "Main priority is still the core meeting experience. Extra integrations can wait.",
+      "end_time_seconds": null
+    }
+  ]
+}

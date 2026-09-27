@@ -2,37 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Clock3, Command, FileAudio, MessageSquareText, Search, UsersRound } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { productDesignReviewMeeting } from "@/lib/mock-meeting-detail";
-
-type SearchResult = {
-  id: string;
-  kind: "meeting" | "transcript";
-  title: string;
-  detail: string;
-  meta: string;
-  href: string;
-};
-
-function matchesQuery(value: string, query: string) {
-  const normalizedValue = value.toLowerCase();
-  return query
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((word) => normalizedValue.includes(word));
-}
-
-function transcriptSnippet(text: string, query: string) {
-  const firstWord = query.toLowerCase().split(/\s+/).find(Boolean) ?? "";
-  const matchIndex = text.toLowerCase().indexOf(firstWord);
-  if (matchIndex < 0 || text.length <= 142) return text;
-
-  const start = Math.max(0, matchIndex - 48);
-  const end = Math.min(text.length, matchIndex + firstWord.length + 86);
-  return `${start > 0 ? "…" : ""}${text.slice(start, end).trim()}${end < text.length ? "…" : ""}`;
-}
+import {
+  ArrowUpRight,
+  Clock3,
+  Command,
+  FileAudio,
+  LoaderCircle,
+  MessageSquareText,
+  Search,
+  UsersRound,
+} from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { SearchResponse, SearchResult } from "@/types/search";
+import { OPEN_GLOBAL_SEARCH_EVENT } from "@/lib/interface-events";
 
 function HighlightMatch({ text, query }: { text: string; query: string }): ReactNode {
   const firstWord = query.trim().split(/\s+/)[0];
@@ -59,40 +41,47 @@ export function GlobalSearch() {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
 
-  const results = useMemo<SearchResult[]>(() => {
+  useEffect(() => {
     const normalizedQuery = query.trim();
-    if (!normalizedQuery) return [];
 
-    const matches: SearchResult[] = [];
+    if (!normalizedQuery) return;
 
-    if (matchesQuery(productDesignReviewMeeting.title, normalizedQuery)) {
-      matches.push({
-        id: productDesignReviewMeeting.id,
-        kind: "meeting",
-        title: productDesignReviewMeeting.title,
-        detail: productDesignReviewMeeting.purpose,
-        meta: `${productDesignReviewMeeting.date} · ${productDesignReviewMeeting.duration} · ${productDesignReviewMeeting.participants.length} participants`,
-        href: `/meetings/${productDesignReviewMeeting.id}`,
-      });
-    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(normalizedQuery)}`, {
+          signal: controller.signal,
+        });
 
-    const transcriptMatches = productDesignReviewMeeting.transcript
-      .filter((segment) => matchesQuery(`${segment.speaker} ${segment.text}`, normalizedQuery))
-      .slice(0, 6)
-      .map<SearchResult>((segment) => ({
-        id: segment.id,
-        kind: "transcript",
-        title: `${segment.speaker} · ${segment.timestamp}`,
-        detail: transcriptSnippet(segment.text, normalizedQuery),
-        meta: productDesignReviewMeeting.title,
-        href: `/meetings/${productDesignReviewMeeting.id}#${segment.id}`,
-      }));
+        if (!response.ok) throw new Error("Search request failed.");
 
-    return [...matches, ...transcriptMatches];
+        const data = (await response.json()) as SearchResponse;
+        setResults(data.results);
+        setActiveIndex(0);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setResults([]);
+        setSearchError(true);
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   useEffect(() => {
+    const openSearch = () => {
+      inputRef.current?.focus();
+      setIsOpen(true);
+    };
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isTyping = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
@@ -119,9 +108,11 @@ export function GlobalSearch() {
 
     document.addEventListener("keydown", handleGlobalKeyDown);
     document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener(OPEN_GLOBAL_SEARCH_EVENT, openSearch);
     return () => {
       document.removeEventListener("keydown", handleGlobalKeyDown);
       document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener(OPEN_GLOBAL_SEARCH_EVENT, openSearch);
     };
   }, []);
 
@@ -132,7 +123,7 @@ export function GlobalSearch() {
   };
 
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!results.length) return;
+    if (isLoading || searchError || !results.length) return;
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -163,7 +154,11 @@ export function GlobalSearch() {
           type="search"
           value={query}
           onChange={(event) => {
-            setQuery(event.target.value);
+            const nextQuery = event.target.value;
+            setQuery(nextQuery);
+            setResults([]);
+            setIsLoading(Boolean(nextQuery.trim()));
+            setSearchError(false);
             setActiveIndex(0);
             setIsOpen(true);
           }}
@@ -174,6 +169,7 @@ export function GlobalSearch() {
           aria-expanded={isOpen}
           aria-controls="global-search-results"
           aria-autocomplete="list"
+          aria-busy={isLoading}
           className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/28"
         />
         <span className="font-label hidden items-center gap-1 rounded-md border border-white/10 bg-black/20 px-1.5 py-1 text-[8px] text-white/28 min-[420px]:flex">
@@ -201,7 +197,22 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {query.trim() && results.length === 0 && (
+          {query.trim() && isLoading && (
+            <div className="px-4 py-10 text-center">
+              <LoaderCircle className="mx-auto size-5 animate-spin text-[#ff8b36]" />
+              <p className="mt-3 text-sm text-white/45">Searching meetings...</p>
+            </div>
+          )}
+
+          {query.trim() && !isLoading && searchError && (
+            <div className="px-4 py-10 text-center">
+              <Search className="mx-auto size-5 text-white/18" />
+              <p className="mt-3 text-sm text-white/45">Search is temporarily unavailable.</p>
+              <p className="mt-1 text-[10px] text-white/25">Please try again in a moment.</p>
+            </div>
+          )}
+
+          {query.trim() && !isLoading && !searchError && results.length === 0 && (
             <div className="px-4 py-10 text-center">
               <Search className="mx-auto size-5 text-white/18" />
               <p className="mt-3 text-sm text-white/45">No results for “{query.trim()}”</p>
@@ -209,7 +220,7 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {meetingResults.length > 0 && (
+          {!isLoading && !searchError && meetingResults.length > 0 && (
             <div>
               <p className="font-label px-3 pb-2 pt-2 text-[8px] tracking-[0.2em] text-white/25">MEETINGS</p>
               {meetingResults.map((result) => {
@@ -248,7 +259,7 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {transcriptResults.length > 0 && (
+          {!isLoading && !searchError && transcriptResults.length > 0 && (
             <div className={meetingResults.length ? "mt-2 border-t border-white/[0.06] pt-2" : ""}>
               <div className="flex items-center justify-between px-3 pb-2 pt-2">
                 <p className="font-label text-[8px] tracking-[0.2em] text-white/25">TRANSCRIPT MATCHES</p>
@@ -256,8 +267,8 @@ export function GlobalSearch() {
               </div>
               {transcriptResults.map((result) => {
                 const resultIndex = results.indexOf(result);
-                const [, timestamp = ""] = result.title.split(" · ");
-                const speaker = result.title.replace(` · ${timestamp}`, "");
+                const timestamp = result.timestamp ?? "00:00";
+                const speaker = result.speaker ?? "Unknown speaker";
 
                 return (
                   <Link

@@ -3,9 +3,9 @@ import {
   CheckCircle2,
   Clock3,
   Highlighter,
-  MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
+import { DeleteMeetingButton } from "@/components/meetings/delete-meeting-button";
 import type { MeetingAccent, MeetingPreview } from "@/types/meeting";
 
 const accentStyles: Record<MeetingAccent, { dot: string; bar: string; glow: string }> = {
@@ -42,13 +42,10 @@ export function MeetingCard({ meeting }: { meeting: MeetingPreview }) {
             PROCESSED
           </span>
         </div>
-        <button
-          type="button"
-          aria-label={`More options for ${meeting.title}`}
-          className="flex size-8 items-center justify-center rounded-lg text-white/28 transition-colors hover:bg-white/[0.06] hover:text-white/75"
-        >
-          <MoreHorizontal className="size-[18px]" />
-        </button>
+        <DeleteMeetingButton
+          meetingId={meeting.id}
+          meetingTitle={meeting.title}
+        />
       </div>
 
       <div className="relative mt-5">

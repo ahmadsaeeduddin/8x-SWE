@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ShareMeetingButton } from "@/components/meetings/share-meeting-button";
-import { PRODUCT_DESIGN_REVIEW_SHARE_TOKEN } from "@/lib/share-token";
 import type { MeetingDetail as MeetingDetailType } from "@/types/meeting";
 
 type MeetingTab = "summary" | "transcript" | "ask-ai";
@@ -34,24 +33,6 @@ const tabs: { id: MeetingTab; label: string; icon: typeof Sparkles }[] = [
   { id: "summary", label: "Summary", icon: Sparkles },
   { id: "transcript", label: "Transcript", icon: MessageSquareText },
   { id: "ask-ai", label: "Ask AI", icon: Bot },
-];
-
-const seededQuestions = [
-  {
-    question: "What did we decide about the launch scope?",
-    answer:
-      "The team limited the October beta to three workflows: finding a meeting, reviewing its recap, and returning to highlights. Custom folders were deferred until after the beta.",
-  },
-  {
-    question: "What does Maya need to deliver?",
-    answer:
-      "Maya owns the updated navigation prototype. It needs persistent labels, keyboard focus states, and a clearly specified collapse interaction by September 29.",
-  },
-  {
-    question: "What are the main product risks?",
-    answer:
-      "The largest risk is discoverability for first-time users. The team also wants to validate that motion clearly communicates where navigation moved and that mobile behavior remains understandable.",
-  },
 ];
 
 function formatTime(totalSeconds: number) {
@@ -89,7 +70,9 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
   const [activeTab, setActiveTab] = useState<MeetingTab>("summary");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [completedActions, setCompletedActions] = useState<string[]>([]);
+  const [completedActions, setCompletedActions] = useState<string[]>(() =>
+    meeting.actionItems.filter((item) => item.completed).map((item) => item.id),
+  );
   const [selectedQuestion, setSelectedQuestion] = useState(0);
   const [transcriptQuery, setTranscriptQuery] = useState("");
 
@@ -144,6 +127,30 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
     );
   }, [meeting.transcript, transcriptQuery]);
 
+  const seededQuestions = useMemo(
+    () => [
+      {
+        question: "What was this meeting about?",
+        answer: meeting.purpose,
+      },
+      {
+        question: "What decisions were made?",
+        answer:
+          meeting.decisions.length > 0
+            ? meeting.decisions.join(" ")
+            : "No explicit decisions were captured for this meeting.",
+      },
+      {
+        question: "What follow-ups were assigned?",
+        answer:
+          meeting.actionItems.length > 0
+            ? meeting.actionItems.map((item) => `${item.owner}: ${item.task}`).join(" ")
+            : "No follow-up actions were captured for this meeting.",
+      },
+    ],
+    [meeting.actionItems, meeting.decisions, meeting.purpose],
+  );
+
   const seekTo = (seconds: number) => {
     setCurrentTime(Math.min(seconds, meeting.durationSeconds));
   };
@@ -182,7 +189,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <ShareMeetingButton token={PRODUCT_DESIGN_REVIEW_SHARE_TOKEN} />
+          {meeting.shareToken && <ShareMeetingButton token={meeting.shareToken} />}
           <button
             type="button"
             aria-label="More meeting options"
@@ -542,7 +549,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                 </div>
               </div>
               <p className="mt-5 text-xs leading-5 text-white/38">
-                Explore answers grounded in this meeting&apos;s mock transcript and summary.
+                Explore answers grounded in this meeting&apos;s seeded transcript and summary.
               </p>
               <div className="mt-6 space-y-2">
                 <p className="font-label mb-3 text-[8px] tracking-[0.18em] text-white/25">SUGGESTED QUESTIONS</p>
@@ -577,10 +584,17 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                     <p className="max-w-xl text-sm font-light leading-6 text-white/58">
                       {seededQuestions[selectedQuestion].answer}
                     </p>
-                    <div className="mt-3 flex gap-2">
-                      <TimestampButton label="22:15" onClick={() => seekTo(1335)} />
-                      <TimestampButton label="37:48" onClick={() => seekTo(2268)} />
-                    </div>
+                    {meeting.highlights.length > 0 && (
+                      <div className="mt-3 flex gap-2">
+                        {meeting.highlights.slice(0, 2).map((highlight) => (
+                          <TimestampButton
+                            key={highlight.id}
+                            label={highlight.timestamp}
+                            onClick={() => seekTo(highlight.timestampSeconds)}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

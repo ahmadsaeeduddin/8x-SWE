@@ -22,6 +22,14 @@ export type MeetingPreview = {
   waveform: number[];
 };
 
+export type DashboardStats = {
+  meetingCount: number;
+  totalDurationSeconds: number;
+  insightCount: number;
+  actionItemCount: number;
+  readyCount: number;
+};
+
 export type MeetingDetailParticipant = MeetingParticipant & {
   role: string;
 };
@@ -35,6 +43,7 @@ export type MeetingActionItem = {
   deadline: string;
   timestamp: string;
   timestampSeconds: number;
+  completed?: boolean;
 };
 
 export type MeetingHighlight = {
@@ -71,4 +80,20 @@ export type MeetingDetail = {
   actionItems: MeetingActionItem[];
   highlights: MeetingHighlight[];
   transcript: TranscriptSegment[];
+  shareToken?: string;
 };
+
+export type PublicSharedMeeting = Pick<
+  MeetingDetail,
+  | "id"
+  | "title"
+  | "date"
+  | "time"
+  | "duration"
+  | "participants"
+  | "purpose"
+  | "takeaways"
+  | "decisions"
+  | "actionItems"
+  | "highlights"
+>;

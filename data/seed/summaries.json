@@ -1,0 +1,68 @@
+[
+  {
+    "id": "b1111111-1111-1111-1111-111111111111",
+    "meeting_id": "11111111-1111-1111-1111-111111111111",
+    "purpose": "Finalize the product release plan and resolve the remaining mobile UI blocker.",
+    "summary": "The team kept Friday as the release target, made the mobile summary layout a release blocker, and agreed on a staged 10% rollout before full release.",
+    "key_takeaways": [
+      "Friday remains the target release date, contingent on QA finishing by Thursday at 5 PM.",
+      "The mobile summary layout must be fixed by Wednesday evening.",
+      "The release will start with 10% of users and expand if error rates remain normal."
+    ],
+    "topics": [
+      "Release readiness",
+      "Mobile UI blocker",
+      "Staged rollout",
+      "Post-release monitoring"
+    ],
+    "decisions": [
+      "Keep Friday as the release date.",
+      "Treat the mobile summary layout issue as a release blocker.",
+      "Start rollout with 10% of users."
+    ]
+  },
+  {
+    "id": "b2222222-2222-2222-2222-222222222222",
+    "meeting_id": "22222222-2222-2222-2222-222222222222",
+    "purpose": "Review Acme onboarding research and agree on improvements for first-time users.",
+    "summary": "Research showed friction around team invitations and workspace setup. The team decided to simplify the first-run checklist and test a guided template flow.",
+    "key_takeaways": [
+      "Team invitation is the largest onboarding friction point.",
+      "Users want guided first-run templates rather than an empty workspace.",
+      "The next test should compare a short checklist against a guided setup flow."
+    ],
+    "topics": [
+      "Customer research",
+      "Team invites",
+      "First-run templates",
+      "Experiment design"
+    ],
+    "decisions": [
+      "Prototype a guided onboarding flow.",
+      "Reduce the initial checklist to three steps.",
+      "Run a follow-up usability test next week."
+    ]
+  },
+  {
+    "id": "b3333333-3333-3333-3333-333333333333",
+    "meeting_id": "33333333-3333-3333-3333-333333333333",
+    "purpose": "Align marketing and sales on the Q4 launch narrative, milestones, and ownership.",
+    "summary": "The team agreed on a single launch narrative, assigned campaign and partner outreach owners, and locked the main Q4 milestone sequence.",
+    "key_takeaways": [
+      "The launch story will focus on measurable time saved from meetings.",
+      "Marketing owns campaign assets; sales owns partner outreach.",
+      "Customer proof points must be ready before the public launch."
+    ],
+    "topics": [
+      "Launch narrative",
+      "Campaign milestones",
+      "Partner outreach",
+      "Customer proof"
+    ],
+    "decisions": [
+      "Use one shared launch narrative across marketing and sales.",
+      "Finalize campaign assets before partner outreach begins.",
+      "Require at least two customer proof points before public launch."
+    ]
+  }
+]

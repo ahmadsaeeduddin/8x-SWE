@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   AudioLines,
   BookOpenText,
@@ -20,6 +21,11 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { BrandMark } from "@/components/layout/brand-mark";
+import {
+  openGlobalSearch,
+  openInterfacePanel,
+  type InterfacePanel,
+} from "@/lib/interface-events";
 
 type SidebarMode = "expanded" | "collapsed" | "floating";
 type Point = { x: number; y: number };
@@ -34,29 +40,31 @@ type DragSession = {
 type NavigationItem = {
   label: string;
   icon: LucideIcon;
-  active?: boolean;
   shortcut?: string;
+  href?: string;
+  panel?: InterfacePanel;
+  search?: boolean;
 };
 
 const primaryNavigation: NavigationItem[] = [
-  { label: "Overview", icon: Home, active: true },
-  { label: "Meetings", icon: UsersRound },
-  { label: "Highlights", icon: Highlighter },
-  { label: "Search", icon: Search, shortcut: "/" },
+  { label: "Overview", icon: Home, href: "/" },
+  { label: "Meetings", icon: UsersRound, href: "/#meetings" },
+  { label: "Highlights", icon: Highlighter, href: "/#highlights" },
+  { label: "Search", icon: Search, shortcut: "/", search: true },
 ];
 
 const libraryNavigation: NavigationItem[] = [
-  { label: "My library", icon: BookOpenText },
-  { label: "Shared with me", icon: Share2 },
+  { label: "My library", icon: BookOpenText, href: "/#meetings" },
+  { label: "Shared with me", icon: Share2, panel: "shared" },
 ];
 
-const radialNavigation = [
-  { label: "Overview", icon: Home, x: 0, y: -88 },
-  { label: "Meetings", icon: UsersRound, x: 78, y: -44 },
-  { label: "Highlights", icon: Highlighter, x: 78, y: 44 },
-  { label: "Settings", icon: Settings, x: 0, y: 88 },
-  { label: "Library", icon: BookOpenText, x: -78, y: 44 },
-  { label: "Search", icon: Search, x: -78, y: -44 },
+const radialNavigation: Array<NavigationItem & Point> = [
+  { label: "Overview", icon: Home, href: "/", x: 0, y: -88 },
+  { label: "Meetings", icon: UsersRound, href: "/#meetings", x: 78, y: -44 },
+  { label: "Highlights", icon: Highlighter, href: "/#highlights", x: 78, y: 44 },
+  { label: "Settings", icon: Settings, panel: "settings", x: 0, y: 88 },
+  { label: "Library", icon: BookOpenText, href: "/#meetings", x: -78, y: 44 },
+  { label: "Search", icon: Search, search: true, x: -78, y: -44 },
 ];
 
 const DEFAULT_VIEWPORT = { width: 1440, height: 900 };
@@ -82,20 +90,15 @@ function NavigationButton({ item, compact }: { item: NavigationItem; compact: bo
   const Icon = item.icon;
   const pathname = usePathname();
   const isActive = item.label === "Overview" ? pathname === "/" : item.label === "Meetings" && pathname.startsWith("/meetings");
-
-  return (
-    <button
-      type="button"
-      title={compact ? item.label : undefined}
-      aria-label={compact ? item.label : undefined}
-      className={`group flex h-10 w-full items-center rounded-xl text-sm transition-colors ${
-        compact ? "justify-center px-0" : "gap-3 px-3"
-      } ${
-        isActive
-          ? "bg-white/[0.07] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035)]"
-          : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
-      }`}
-    >
+  const className = `group flex h-10 w-full items-center rounded-xl text-sm transition-colors ${
+    compact ? "justify-center px-0" : "gap-3 px-3"
+  } ${
+    isActive
+      ? "bg-white/[0.07] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035)]"
+      : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+  }`;
+  const content = (
+    <>
       <Icon
         className={`size-[17px] shrink-0 transition-colors ${
           isActive ? "text-[#ff7a1a]" : "text-white/35 group-hover:text-white/65"
@@ -108,11 +111,40 @@ function NavigationButton({ item, compact }: { item: NavigationItem; compact: bo
           {item.shortcut}
         </span>
       )}
+    </>
+  );
+
+  if (item.href) {
+    return (
+      <Link
+        href={item.href}
+        title={compact ? item.label : undefined}
+        aria-label={compact ? item.label : undefined}
+        className={className}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      title={compact ? item.label : undefined}
+      aria-label={compact ? item.label : undefined}
+      onClick={() => {
+        if (item.search) openGlobalSearch();
+        if (item.panel) openInterfacePanel(item.panel);
+      }}
+      className={className}
+    >
+      {content}
     </button>
   );
 }
 
 export function Sidebar() {
+  const router = useRouter();
   const [mode, setMode] = useState<SidebarMode>("expanded");
   const [orbPosition, setOrbPosition] = useState<Point>({ x: 110, y: 132 });
   const [radialOpen, setRadialOpen] = useState(false);
@@ -120,6 +152,13 @@ export function Sidebar() {
   const [isDragging, setIsDragging] = useState(false);
   const viewportRef = useRef(DEFAULT_VIEWPORT);
   const didDragRef = useRef(false);
+
+  const activateItem = (item: NavigationItem) => {
+    setRadialOpen(false);
+    if (item.href) router.push(item.href);
+    if (item.search) openGlobalSearch();
+    if (item.panel) openInterfacePanel(item.panel);
+  };
 
   useEffect(() => {
     const updateViewport = () => {
@@ -226,6 +265,7 @@ export function Sidebar() {
                   tabIndex={radialOpen ? 0 : -1}
                   title={item.label}
                   aria-label={item.label}
+                  onClick={() => activateItem(item)}
                   className="absolute left-1/2 top-1/2 flex size-11 items-center justify-center rounded-full border border-white/10 bg-[#111119]/95 text-white/50 shadow-[0_12px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl transition-[transform,opacity,color,background-color] duration-300 hover:border-[#ff7a1a]/35 hover:bg-[#1a1514] hover:text-[#ff8b36] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff7a1a]"
                   style={{
                     opacity: radialOpen ? 1 : 0,
@@ -332,6 +372,7 @@ export function Sidebar() {
               type="button"
               title="12 hours saved this month"
               aria-label="12 hours saved this month"
+              onClick={() => router.push("/#highlights")}
               className="flex h-10 w-full items-center justify-center rounded-xl bg-orange-400/[0.09] text-[#ff7a1a]"
             >
               <Sparkles className="size-4" />
@@ -340,6 +381,7 @@ export function Sidebar() {
               type="button"
               title="Settings"
               aria-label="Settings"
+              onClick={() => openInterfacePanel("settings")}
               className="flex h-10 w-full items-center justify-center rounded-xl text-white/35 transition-colors hover:bg-white/[0.04] hover:text-white/70"
             >
               <Settings className="size-4" />
@@ -357,12 +399,14 @@ export function Sidebar() {
             <div className="grid grid-cols-2 gap-1">
               <button
                 type="button"
+                onClick={() => openInterfacePanel("help")}
                 className="flex h-9 items-center justify-center gap-2 rounded-lg text-xs text-white/35 transition-colors hover:bg-white/[0.04] hover:text-white/70"
               >
                 <CircleHelp className="size-3.5" /> Help
               </button>
               <button
                 type="button"
+                onClick={() => openInterfacePanel("settings")}
                 className="flex h-9 items-center justify-center gap-2 rounded-lg text-xs text-white/35 transition-colors hover:bg-white/[0.04] hover:text-white/70"
               >
                 <Settings className="size-3.5" /> Settings
