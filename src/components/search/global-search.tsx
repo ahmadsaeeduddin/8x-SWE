@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { SearchResponse, SearchResult } from "@/types/search";
+import { OPEN_GLOBAL_SEARCH_EVENT } from "@/lib/interface-events";
 
 function HighlightMatch({ text, query }: { text: string; query: string }): ReactNode {
   const firstWord = query.trim().split(/\s+/)[0];
@@ -77,6 +78,10 @@ export function GlobalSearch() {
   }, [query]);
 
   useEffect(() => {
+    const openSearch = () => {
+      inputRef.current?.focus();
+      setIsOpen(true);
+    };
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isTyping = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
@@ -103,9 +108,11 @@ export function GlobalSearch() {
 
     document.addEventListener("keydown", handleGlobalKeyDown);
     document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener(OPEN_GLOBAL_SEARCH_EVENT, openSearch);
     return () => {
       document.removeEventListener("keydown", handleGlobalKeyDown);
       document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener(OPEN_GLOBAL_SEARCH_EVENT, openSearch);
     };
   }, []);
 
