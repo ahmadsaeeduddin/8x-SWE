@@ -1,24 +1,18 @@
 import "server-only";
 
-import type { MeetingAnalysis } from "@/lib/ai/analyze-meeting";
+import type { MeetingAnalysis } from "@/lib/ai/analyze-transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type SaveMeetingAnalysisInput = {
-  meetingId: string;
-  participantIdsByName: Map<string, string>;
-  analysis: MeetingAnalysis;
-};
-
-export async function saveMeetingAnalysis({
-  meetingId,
-  participantIdsByName,
-  analysis,
-}: SaveMeetingAnalysisInput) {
+export async function saveMeetingAnalysis(
+  meetingId: string,
+  participantByName: Map<string, string>,
+  analysis: MeetingAnalysis,
+) {
   const supabase = createAdminClient();
-  const { error: summaryError } = await supabase.from("summaries").upsert({
+  const { error: summaryError } = await supabase.from("summaries").insert({
     meeting_id: meetingId,
     purpose: analysis.understanding.purpose,
-    key_takeaways: analysis.understanding.key_takeaways,
+    key_takeaways: analysis.understanding.keyTakeaways,
     topics: analysis.understanding.topics,
     decisions: analysis.understanding.decisions,
   });
@@ -29,12 +23,12 @@ export async function saveMeetingAnalysis({
       analysis.actionItems.map((item, index) => ({
         meeting_id: meetingId,
         task: item.task,
-        owner_name: item.assignee,
         owner_participant_id: item.assignee
-          ? (participantIdsByName.get(item.assignee.toLocaleLowerCase()) ?? null)
+          ? participantByName.get(item.assignee.toLocaleLowerCase()) ?? null
           : null,
+        owner_name: item.assignee,
         deadline: item.deadline,
-        timestamp_seconds: item.source_timestamp_seconds,
+        timestamp_seconds: item.sourceTimestampSeconds,
         status: "open" as const,
         sort_order: index,
       })),
@@ -44,19 +38,19 @@ export async function saveMeetingAnalysis({
 
   if (analysis.highlights.length) {
     const { error } = await supabase.from("highlights").insert(
-      analysis.highlights.map((highlight, index) => ({
+      analysis.highlights.map((item, index) => ({
         meeting_id: meetingId,
-        label: highlight.label,
-        title: highlight.important_moment,
-        detail: highlight.important_moment,
-        timestamp_seconds: highlight.source_timestamp_seconds,
+        label: item.label,
+        title: item.label ?? "Important moment",
+        detail: item.importantMoment,
+        timestamp_seconds: item.sourceTimestampSeconds,
         sort_order: index,
       })),
     );
     if (error) throw error;
   }
 
-  const { error: readyError } = await supabase
+  const { error: meetingError } = await supabase
     .from("meetings")
     .update({
       short_summary: analysis.understanding.summary,
@@ -64,20 +58,5 @@ export async function saveMeetingAnalysis({
       error_message: null,
     })
     .eq("id", meetingId);
-  if (readyError) throw readyError;
-}
-
-export async function clearMeetingAnalysis(meetingId: string) {
-  const supabase = createAdminClient();
-  const tables = ["summaries", "action_items", "highlights"] as const;
-  const results = await Promise.all(
-    tables.map((table) => supabase.from(table).delete().eq("meeting_id", meetingId)),
-  );
-  const cleanupError = results.find((result) => result.error)?.error;
-
-  if (cleanupError) {
-    console.error(
-      `[meeting-analysis] Failed to clear partial analysis for ${meetingId}: ${cleanupError.message}`,
-    );
-  }
+  if (meetingError) throw meetingError;
 }

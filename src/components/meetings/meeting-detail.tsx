@@ -23,7 +23,7 @@ import {
   UsersRound,
   Volume2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ShareMeetingButton } from "@/components/meetings/share-meeting-button";
 import type { MeetingDetail as MeetingDetailType } from "@/types/meeting";
 
@@ -67,6 +67,7 @@ function TimestampButton({
 }
 
 export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [activeTab, setActiveTab] = useState<MeetingTab>("summary");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -77,7 +78,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
   const [transcriptQuery, setTranscriptQuery] = useState("");
 
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || meeting.recordingUrl) return;
 
     const timer = window.setInterval(() => {
       setCurrentTime((current) => {
@@ -90,7 +91,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [isPlaying, meeting.durationSeconds]);
+  }, [isPlaying, meeting.durationSeconds, meeting.recordingUrl]);
 
   useEffect(() => {
     const openTranscriptMatch = () => {
@@ -152,10 +153,29 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
   );
 
   const seekTo = (seconds: number) => {
-    setCurrentTime(Math.min(seconds, meeting.durationSeconds));
+    const nextTime = Math.min(Math.max(seconds, 0), meeting.durationSeconds);
+    if (audioRef.current) audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
   };
 
-  const progress = currentTime / meeting.durationSeconds;
+  const togglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio) {
+      setIsPlaying((current) => !current);
+      return;
+    }
+    if (!audio.paused) {
+      audio.pause();
+      return;
+    }
+    try {
+      await audio.play();
+    } catch {
+      setIsPlaying(false);
+    }
+  };
+
+  const progress = meeting.durationSeconds > 0 ? currentTime / meeting.durationSeconds : 0;
 
   return (
     <div className="mx-auto max-w-[1480px]">
@@ -211,13 +231,28 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                 </span>
                 <div>
                   <p className="font-label text-[8px] tracking-[0.2em] text-white/42">MEETING RECORDING</p>
-                  <p className="mt-1 text-[10px] text-white/25">High quality audio · 48 kHz</p>
+                  <p className="mt-1 text-[10px] text-white/25">
+                    {meeting.recordingUrl ? "Uploaded playback audio" : "Timeline preview"}
+                  </p>
                 </div>
               </div>
               <span className="font-label rounded-md border border-white/[0.07] bg-black/20 px-2 py-1 text-[8px] tracking-[0.12em] text-white/30">
-                MOCK RECORDING
+                {meeting.recordingUrl ? "PLAYBACK READY" : "TIMELINE ONLY"}
               </span>
             </div>
+
+            {meeting.recordingUrl && (
+              <audio
+                ref={audioRef}
+                preload="metadata"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+                onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+              >
+                <source src={meeting.recordingUrl} type={meeting.recordingMimeType} />
+              </audio>
+            )}
 
             <div className="my-8 flex h-24 items-center gap-[3px] sm:h-32 sm:gap-1" aria-hidden="true">
               {meeting.waveform.map((height, index) => {
@@ -251,7 +286,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                 <div className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => setIsPlaying((current) => !current)}
+                    onClick={() => void togglePlayback()}
                     aria-label={isPlaying ? "Pause recording" : "Play recording"}
                     className="flex size-11 items-center justify-center rounded-full bg-[#ff7a1a] text-[#09090d] shadow-[0_10px_34px_rgba(255,122,26,0.28)] transition-transform hover:scale-105"
                   >
