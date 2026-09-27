@@ -1,13 +1,20 @@
+"use client";
+
 import { Highlighter, Home, Search, UsersRound } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { openGlobalSearch } from "@/lib/interface-events";
 
 const items = [
-  { label: "Overview", icon: Home, active: true },
-  { label: "Meetings", icon: UsersRound },
-  { label: "Highlights", icon: Highlighter },
-  { label: "Search", icon: Search },
+  { label: "Overview", icon: Home, href: "/" },
+  { label: "Meetings", icon: UsersRound, href: "/#meetings" },
+  { label: "Highlights", icon: Highlighter, href: "/#highlights" },
+  { label: "Search", icon: Search, search: true },
 ];
 
 export function MobileNavigation() {
+  const pathname = usePathname();
+
   return (
     <nav
       aria-label="Mobile navigation"
@@ -15,16 +22,35 @@ export function MobileNavigation() {
     >
       {items.map((item) => {
         const Icon = item.icon;
-        return (
+        const isActive =
+          item.label === "Overview"
+            ? pathname === "/"
+            : item.label === "Meetings" && pathname.startsWith("/meetings");
+        const className = `flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[9px] font-medium transition-colors ${
+          isActive ? "bg-white/[0.07] text-white" : "text-white/35 hover:text-white/70"
+        }`;
+        const content = (
+          <>
+            <Icon
+              className={`size-[17px] ${isActive ? "text-[#ff7a1a]" : ""}`}
+              strokeWidth={1.8}
+            />
+            {item.label}
+          </>
+        );
+
+        return item.href ? (
+          <Link key={item.label} href={item.href} className={className}>
+            {content}
+          </Link>
+        ) : (
           <button
             key={item.label}
             type="button"
-            className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[9px] font-medium transition-colors ${
-              item.active ? "bg-white/[0.07] text-white" : "text-white/35 hover:text-white/70"
-            }`}
+            onClick={item.search ? openGlobalSearch : undefined}
+            className={className}
           >
-            <Icon className={`size-[17px] ${item.active ? "text-[#ff7a1a]" : ""}`} strokeWidth={1.8} />
-            {item.label}
+            {content}
           </button>
         );
       })}

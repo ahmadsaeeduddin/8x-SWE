@@ -43,7 +43,10 @@ export function DashboardOverview({ meetings, stats, meetingState }: DashboardOv
 
   return (
     <div className="mx-auto max-w-[1480px]">
-      <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <section
+        id="overview"
+        className="scroll-mt-28 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+      >
         <div>
           <div className="mb-3 flex items-center gap-2">
             <span className="font-label text-[9px] font-medium tracking-[0.3em] text-[#ff7a1a]">
@@ -65,7 +68,11 @@ export function DashboardOverview({ meetings, stats, meetingState }: DashboardOv
         </button>
       </section>
 
-      <section className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Meeting overview">
+      <section
+        id="highlights"
+        className="mt-8 grid scroll-mt-28 grid-cols-1 gap-3 sm:grid-cols-3"
+        aria-label="Meeting overview"
+      >
         {overviewStats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -92,7 +99,7 @@ export function DashboardOverview({ meetings, stats, meetingState }: DashboardOv
         })}
       </section>
 
-      <section className="mt-10">
+      <section id="meetings" className="mt-10 scroll-mt-28">
         <div className="mb-4 flex items-end justify-between">
           <div>
             <p className="font-display text-lg font-semibold tracking-[-0.03em] text-white">Recent meetings</p>
