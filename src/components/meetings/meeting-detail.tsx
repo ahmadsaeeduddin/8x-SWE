@@ -209,7 +209,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {meeting.shareToken && <ShareMeetingButton token={meeting.shareToken} />}
+          <ShareMeetingButton meetingSlug={meeting.id} token={meeting.shareToken} />
           <button
             type="button"
             aria-label="More meeting options"

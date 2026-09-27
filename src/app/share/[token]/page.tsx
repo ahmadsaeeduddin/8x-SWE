@@ -20,5 +20,10 @@ export default async function SharedMeetingPage({ params }: PageProps<"/share/[t
     notFound();
   }
 
-  return <PublicMeetingShare meeting={meeting} />;
+  return (
+    <PublicMeetingShare
+      meeting={meeting}
+      downloadPath={`/share/${encodeURIComponent(token)}/download`}
+    />
+  );
 }
