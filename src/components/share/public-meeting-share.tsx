@@ -2,6 +2,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Download,
   Eye,
   Highlighter,
   Lightbulb,
@@ -13,7 +14,13 @@ import { BrandMark } from "@/components/layout/brand-mark";
 import { EchoWaveBackground } from "@/components/layout/echo-wave-background";
 import type { PublicSharedMeeting } from "@/types/meeting";
 
-export function PublicMeetingShare({ meeting }: { meeting: PublicSharedMeeting }) {
+export function PublicMeetingShare({
+  meeting,
+  downloadPath,
+}: {
+  meeting: PublicSharedMeeting;
+  downloadPath: string;
+}) {
   return (
     <div className="relative isolate min-h-screen overflow-x-clip">
       <EchoWaveBackground />
@@ -22,8 +29,16 @@ export function PublicMeetingShare({ meeting }: { meeting: PublicSharedMeeting }
         <header className="border-b border-white/[0.07] bg-[#05050a]/78 px-4 py-4 backdrop-blur-2xl sm:px-6">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <BrandMark />
-            <div className="font-label flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[8px] tracking-[0.16em] text-white/38">
-              <Eye className="size-3 text-[#64d3ff]" /> PUBLIC · READ ONLY
+            <div className="flex items-center gap-2">
+              <a
+                href={downloadPath}
+                className="flex h-9 items-center gap-2 rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 text-[10px] font-medium text-white/55 transition-colors hover:bg-white/[0.08] hover:text-white"
+              >
+                <Download className="size-3.5 text-[#ff8b36]" /> Download PDF
+              </a>
+              <div className="font-label hidden items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[8px] tracking-[0.16em] text-white/38 sm:flex">
+                <Eye className="size-3 text-[#64d3ff]" /> PUBLIC · READ ONLY
+              </div>
             </div>
           </div>
         </header>

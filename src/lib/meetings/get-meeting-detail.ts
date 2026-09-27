@@ -87,8 +87,9 @@ function rotateWaveform(slug: string) {
 
 export const getMeetingDetail = cache(async (slug: string): Promise<MeetingDetail | null> => {
   await connection();
+  const supabase = createAdminClient();
 
-  const { data: meeting, error } = await createAdminClient()
+  const { data: meeting, error } = await supabase
     .from("meetings")
     .select(`
       id,
@@ -101,7 +102,7 @@ export const getMeetingDetail = cache(async (slug: string): Promise<MeetingDetai
         sort_order,
         participant:participants(id, name, initials, avatar_color)
       ),
-      recordings(waveform, is_primary),
+      recordings(storage_bucket, storage_path, mime_type, waveform, is_primary),
       summaries(purpose, key_takeaways, decisions),
       action_items(
         id,
@@ -151,6 +152,16 @@ export const getMeetingDetail = cache(async (slug: string): Promise<MeetingDetai
   const waveform = primaryRecording?.waveform.length
     ? primaryRecording.waveform
     : rotateWaveform(meeting.slug);
+  let recordingUrl: string | undefined;
+  if (primaryRecording?.mime_type.startsWith("audio/")) {
+    const { data: signedRecording, error: signedRecordingError } = await supabase.storage
+      .from(primaryRecording.storage_bucket)
+      .createSignedUrl(primaryRecording.storage_path, 60 * 60);
+    if (signedRecordingError) {
+      throw new Error(`Unable to create recording playback URL: ${signedRecordingError.message}`);
+    }
+    recordingUrl = signedRecording.signedUrl;
+  }
   const startsAt = new Date(meeting.starts_at);
 
   return {
@@ -170,6 +181,8 @@ export const getMeetingDetail = cache(async (slug: string): Promise<MeetingDetai
     }).format(startsAt),
     duration: formatDuration(meeting.duration_seconds),
     durationSeconds: meeting.duration_seconds,
+    recordingUrl,
+    recordingMimeType: recordingUrl ? primaryRecording?.mime_type : undefined,
     participants,
     waveform,
     purpose: summary?.purpose ?? "No meeting purpose is available yet.",

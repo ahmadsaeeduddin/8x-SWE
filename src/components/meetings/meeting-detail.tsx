@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  AlertCircle,
   ArrowLeft,
   AudioLines,
   Bot,
@@ -12,6 +13,7 @@ import {
   Highlighter,
   Lightbulb,
   ListChecks,
+  LoaderCircle,
   MessageSquareText,
   MoreHorizontal,
   Pause,
@@ -23,11 +25,31 @@ import {
   UsersRound,
   Volume2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ShareMeetingButton } from "@/components/meetings/share-meeting-button";
 import type { MeetingDetail as MeetingDetailType } from "@/types/meeting";
 
 type MeetingTab = "summary" | "transcript" | "ask-ai";
+
+type AskCitation = {
+  segmentId: string;
+  speaker: string;
+  timestamp: string;
+  timestampSeconds: number;
+};
+
+type AskExchange = {
+  id: string;
+  question: string;
+  answer: string;
+  citations: AskCitation[];
+};
+
+const suggestedQuestions = [
+  "What was this meeting about?",
+  "What decisions were made?",
+  "What follow-ups were assigned?",
+];
 
 const tabs: { id: MeetingTab; label: string; icon: typeof Sparkles }[] = [
   { id: "summary", label: "Summary", icon: Sparkles },
@@ -67,17 +89,21 @@ function TimestampButton({
 }
 
 export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [activeTab, setActiveTab] = useState<MeetingTab>("summary");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [completedActions, setCompletedActions] = useState<string[]>(() =>
     meeting.actionItems.filter((item) => item.completed).map((item) => item.id),
   );
-  const [selectedQuestion, setSelectedQuestion] = useState(0);
   const [transcriptQuery, setTranscriptQuery] = useState("");
+  const [askInput, setAskInput] = useState("");
+  const [askExchanges, setAskExchanges] = useState<AskExchange[]>([]);
+  const [isAsking, setIsAsking] = useState(false);
+  const [askError, setAskError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || meeting.recordingUrl) return;
 
     const timer = window.setInterval(() => {
       setCurrentTime((current) => {
@@ -90,7 +116,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [isPlaying, meeting.durationSeconds]);
+  }, [isPlaying, meeting.durationSeconds, meeting.recordingUrl]);
 
   useEffect(() => {
     const openTranscriptMatch = () => {
@@ -127,35 +153,87 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
     );
   }, [meeting.transcript, transcriptQuery]);
 
-  const seededQuestions = useMemo(
-    () => [
-      {
-        question: "What was this meeting about?",
-        answer: meeting.purpose,
-      },
-      {
-        question: "What decisions were made?",
-        answer:
-          meeting.decisions.length > 0
-            ? meeting.decisions.join(" ")
-            : "No explicit decisions were captured for this meeting.",
-      },
-      {
-        question: "What follow-ups were assigned?",
-        answer:
-          meeting.actionItems.length > 0
-            ? meeting.actionItems.map((item) => `${item.owner}: ${item.task}`).join(" ")
-            : "No follow-up actions were captured for this meeting.",
-      },
-    ],
-    [meeting.actionItems, meeting.decisions, meeting.purpose],
-  );
-
   const seekTo = (seconds: number) => {
-    setCurrentTime(Math.min(seconds, meeting.durationSeconds));
+    const nextTime = Math.min(Math.max(seconds, 0), meeting.durationSeconds);
+    if (audioRef.current) audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
   };
 
-  const progress = currentTime / meeting.durationSeconds;
+  const togglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio) {
+      setIsPlaying((current) => !current);
+      return;
+    }
+    if (!audio.paused) {
+      audio.pause();
+      return;
+    }
+    try {
+      await audio.play();
+    } catch {
+      setIsPlaying(false);
+    }
+  };
+
+  const progress = meeting.durationSeconds > 0 ? currentTime / meeting.durationSeconds : 0;
+
+  const askMeeting = async (rawQuestion: string) => {
+    const question = rawQuestion.trim();
+    if (!question || isAsking) return;
+
+    setIsAsking(true);
+    setAskError(null);
+    try {
+      const response = await fetch(`/api/meetings/${encodeURIComponent(meeting.id)}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const payload = (await response.json()) as {
+        answer?: string;
+        citations?: AskCitation[];
+        error?: string;
+      };
+      if (!response.ok || !payload.answer || !payload.citations) {
+        setAskError(payload.error ?? "Ask AI could not answer this question.");
+        return;
+      }
+      const answer = payload.answer;
+      const citations = payload.citations;
+
+      setAskExchanges((current) => [
+        ...current,
+        {
+          id: `${Date.now()}-${current.length}`,
+          question,
+          answer,
+          citations,
+        },
+      ]);
+      setAskInput("");
+    } catch {
+      setAskError("Ask AI is unavailable right now. Please try again.");
+    } finally {
+      setIsAsking(false);
+    }
+  };
+
+  const submitQuestion = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void askMeeting(askInput);
+  };
+
+  const openCitation = (citation: AskCitation) => {
+    seekTo(citation.timestampSeconds);
+    setActiveTab("transcript");
+    window.history.replaceState(null, "", `#${citation.segmentId}`);
+    window.setTimeout(() => {
+      document
+        .getElementById(citation.segmentId)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  };
 
   return (
     <div className="mx-auto max-w-[1480px]">
@@ -189,7 +267,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {meeting.shareToken && <ShareMeetingButton token={meeting.shareToken} />}
+          <ShareMeetingButton meetingSlug={meeting.id} token={meeting.shareToken} />
           <button
             type="button"
             aria-label="More meeting options"
@@ -211,13 +289,28 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                 </span>
                 <div>
                   <p className="font-label text-[8px] tracking-[0.2em] text-white/42">MEETING RECORDING</p>
-                  <p className="mt-1 text-[10px] text-white/25">High quality audio · 48 kHz</p>
+                  <p className="mt-1 text-[10px] text-white/25">
+                    {meeting.recordingUrl ? "Uploaded playback audio" : "Timeline preview"}
+                  </p>
                 </div>
               </div>
               <span className="font-label rounded-md border border-white/[0.07] bg-black/20 px-2 py-1 text-[8px] tracking-[0.12em] text-white/30">
-                MOCK RECORDING
+                {meeting.recordingUrl ? "PLAYBACK READY" : "TIMELINE ONLY"}
               </span>
             </div>
+
+            {meeting.recordingUrl && (
+              <audio
+                ref={audioRef}
+                preload="metadata"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+                onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+              >
+                <source src={meeting.recordingUrl} type={meeting.recordingMimeType} />
+              </audio>
+            )}
 
             <div className="my-8 flex h-24 items-center gap-[3px] sm:h-32 sm:gap-1" aria-hidden="true">
               {meeting.waveform.map((height, index) => {
@@ -251,7 +344,7 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                 <div className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => setIsPlaying((current) => !current)}
+                    onClick={() => void togglePlayback()}
                     aria-label={isPlaying ? "Pause recording" : "Play recording"}
                     className="flex size-11 items-center justify-center rounded-full bg-[#ff7a1a] text-[#09090d] shadow-[0_10px_34px_rgba(255,122,26,0.28)] transition-transform hover:scale-105"
                   >
@@ -545,76 +638,112 @@ export function MeetingDetail({ meeting }: { meeting: MeetingDetailType }) {
                 </div>
                 <div>
                   <h2 className="font-display text-base font-semibold text-white">Ask this meeting</h2>
-                  <p className="mt-0.5 text-[10px] text-white/28">Seeded preview</p>
+                  <p className="mt-0.5 text-[10px] text-white/28">Grounded in this meeting only</p>
                 </div>
               </div>
               <p className="mt-5 text-xs leading-5 text-white/38">
-                Explore answers grounded in this meeting&apos;s seeded transcript and summary.
+                Answers use this meeting&apos;s transcript, summary, decisions, and action items. If
+                something was not discussed, Echo will say so.
               </p>
               <div className="mt-6 space-y-2">
                 <p className="font-label mb-3 text-[8px] tracking-[0.18em] text-white/25">SUGGESTED QUESTIONS</p>
-                {seededQuestions.map((item, index) => (
+                {suggestedQuestions.map((question) => (
                   <button
-                    key={item.question}
+                    key={question}
                     type="button"
-                    onClick={() => setSelectedQuestion(index)}
-                    className={`w-full rounded-xl border p-3 text-left text-[11px] leading-4 transition-colors ${
-                      selectedQuestion === index
-                        ? "border-[#ff7a1a]/25 bg-[#ff7a1a]/[0.07] text-white/70"
-                        : "border-white/[0.06] bg-white/[0.02] text-white/38 hover:bg-white/[0.04] hover:text-white/60"
-                    }`}
+                    onClick={() => void askMeeting(question)}
+                    disabled={isAsking}
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-left text-[11px] leading-4 text-white/38 transition-colors hover:bg-white/[0.04] hover:text-white/60 disabled:cursor-wait disabled:opacity-45"
                   >
-                    {item.question}
+                    {question}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="flex min-h-[420px] flex-col p-5 sm:p-7">
-              <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center">
-                <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-white/[0.065] px-4 py-3 text-[13px] leading-5 text-white/68">
-                  {seededQuestions[selectedQuestion].question}
-                </div>
-                <div className="mt-5 flex items-start gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#ff7a1a] text-[#09090d]">
-                    <Sparkles className="size-3.5" />
-                  </div>
-                  <div>
-                    <p className="font-label mb-2 text-[8px] tracking-[0.16em] text-[#ff9950]">ECHO AI</p>
-                    <p className="max-w-xl text-sm font-light leading-6 text-white/58">
-                      {seededQuestions[selectedQuestion].answer}
+              <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-7">
+                {askExchanges.length === 0 && !isAsking && (
+                  <div className="py-12 text-center">
+                    <div className="mx-auto flex size-11 items-center justify-center rounded-2xl border border-[#ff7a1a]/15 bg-[#ff7a1a]/[0.06] text-[#ff8b36]">
+                      <Sparkles className="size-5" />
+                    </div>
+                    <h3 className="font-display mt-4 text-base font-semibold text-white/72">
+                      Ask about this meeting
+                    </h3>
+                    <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-white/32">
+                      Ask about what was discussed, decided, or assigned. Answers stay within the
+                      current meeting context.
                     </p>
-                    {meeting.highlights.length > 0 && (
-                      <div className="mt-3 flex gap-2">
-                        {meeting.highlights.slice(0, 2).map((highlight) => (
-                          <TimestampButton
-                            key={highlight.id}
-                            label={highlight.timestamp}
-                            onClick={() => seekTo(highlight.timestampSeconds)}
-                          />
-                        ))}
-                      </div>
-                    )}
                   </div>
-                </div>
+                )}
+
+                {askExchanges.map((exchange) => (
+                  <article key={exchange.id} className="space-y-5">
+                    <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-white/[0.065] px-4 py-3 text-[13px] leading-5 text-white/68">
+                      {exchange.question}
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#ff7a1a] text-[#09090d]">
+                        <Sparkles className="size-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-label mb-2 text-[8px] tracking-[0.16em] text-[#ff9950]">ECHO AI</p>
+                        <p className="max-w-xl whitespace-pre-wrap text-sm font-light leading-6 text-white/58">
+                          {exchange.answer}
+                        </p>
+                        {exchange.citations.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {exchange.citations.map((citation) => (
+                              <TimestampButton
+                                key={citation.segmentId}
+                                label={`${citation.timestamp} · ${citation.speaker}`}
+                                onClick={() => openCitation(citation)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))}
+
+                {isAsking && (
+                  <div className="flex items-center gap-3 text-xs text-white/38" role="status">
+                    <div className="flex size-8 items-center justify-center rounded-xl bg-[#ff7a1a]/10 text-[#ff8b36]">
+                      <LoaderCircle className="size-4 animate-spin" />
+                    </div>
+                    Checking this meeting&apos;s context...
+                  </div>
+                )}
               </div>
 
-              <div className="mx-auto mt-8 flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-white/[0.09] bg-black/20 p-2 pl-4">
+              {askError && (
+                <div role="alert" className="mx-auto mt-5 flex w-full max-w-2xl items-start gap-2.5 rounded-xl border border-red-400/15 bg-red-400/[0.055] px-3.5 py-3 text-[11px] leading-5 text-red-100/55">
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-red-300/75" />
+                  {askError}
+                </div>
+              )}
+
+              <form onSubmit={submitQuestion} className="mx-auto mt-8 flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-white/[0.09] bg-black/20 p-2 pl-4">
                 <input
                   type="text"
-                  readOnly
-                  placeholder="Ask anything about this meeting..."
-                  className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/25"
+                  value={askInput}
+                  onChange={(event) => setAskInput(event.target.value)}
+                  disabled={isAsking}
+                  maxLength={500}
+                  placeholder="Ask a question about this meeting..."
+                  className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/25 disabled:opacity-50"
                 />
                 <button
-                  type="button"
+                  type="submit"
+                  disabled={isAsking || !askInput.trim()}
                   aria-label="Send question"
-                  title="Seeded preview only"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#ff7a1a] text-[#09090d] transition-colors hover:bg-[#ff8b38]"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#ff7a1a] text-[#09090d] transition-colors hover:bg-[#ff8b38] disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  <Send className="size-3.5" />
+                  {isAsking ? <LoaderCircle className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
                 </button>
-              </div>
+              </form>
             </div>
           </section>
         )}
