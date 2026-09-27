@@ -9,19 +9,17 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 | Web app | Next.js (App Router) + TypeScript |
 | UI | Tailwind CSS + reusable React components |
 | AI analysis | OpenAI API |
-| Speech-to-text | Groq Whisper or another free-tier STT provider |
 | Database | Supabase PostgreSQL |
 | File storage | Supabase Storage |
 | Deployment | Vercel |
 
 # High-level system flow
 
-1. User opens a seeded meeting or uploads audio/video or a demo transcript.
-2. Media is stored in Supabase Storage and meeting metadata in PostgreSQL.
-3. Uploaded media is transcribed; supplied transcripts skip STT.
-4. OpenAI generates validated, structured meeting insights.
-5. Validated results are stored and shown on the meeting detail and share pages.
-6. Search uses meeting titles and transcript text stored in PostgreSQL.
+1. User opens a seeded meeting or imports a transcript, optionally paired with audio.
+2. The transcript is validated and remains the source of truth; paired audio is stored privately for playback.
+3. OpenAI generates validated, structured meeting insights.
+4. Validated results are stored and shown on the meeting detail and share pages.
+5. Search uses meeting titles and transcript text stored in PostgreSQL.
 
 # Frontend structure
 
@@ -35,9 +33,8 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 - Next.js Server Components load page data.
 - Route Handlers manage uploads, processing, search, media access, and sharing.
 - A typed AI service wraps OpenAI structured outputs.
-- A typed STT service wraps Groq Whisper or a replacement provider.
 - Supabase and AI credentials remain server-only.
-- Processing states: `uploaded`, `transcribing`, `analyzing`, `ready`, and `failed`.
+- Import processing uses `uploaded` → `analyzing` → `ready`, or `failed` on unsafe failure.
 
 # Database structure
 
@@ -50,13 +47,13 @@ A Fathom-style meeting intelligence app focused on the `Scope.md` **In scope** f
 
 PostgreSQL full-text indexes cover meeting titles and transcript text.
 
-# AI/STT flow
+# AI and import flow
 
-1. Validate and upload media to Supabase Storage.
-2. Transcribe with Groq Whisper and normalize timestamped segments.
-3. Run three focused structured-output calls for understanding, action items, and highlights.
-4. Each call uses the original transcript and OpenAI structured output.
-5. Validate before saving; unknown owners, deadlines, or timestamps remain empty.
+1. Validate the required TXT/JSON transcript; reject audio-only imports.
+2. For paired imports, check transcript timestamps against browser-readable audio duration and upload audio to private Supabase Storage.
+3. Save participants and transcript segments, then run three focused OpenAI structured-output calls for understanding, action items, and highlights.
+4. Validate every result before saving; unknown owners, deadlines, or timestamps remain empty.
+5. Serve playback through short-lived signed URLs.
 
 # Main project folder structure
 
@@ -73,7 +70,6 @@ src/
     ui/
   lib/
     ai/                       # OpenAI analysis pipeline
-    stt/                      # Groq Whisper adapter
     supabase/                 # Database and storage clients
     validation/               # Input and AI-output schemas
   types/

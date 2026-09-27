@@ -6,7 +6,7 @@ import { TranscriptUploadFlow } from "@/components/meetings/transcript-upload-fl
 
 export const metadata: Metadata = {
   title: "New meeting — Echo",
-  description: "Create a meeting from a structured TXT or JSON transcript.",
+  description: "Create and analyze a meeting from a transcript, optionally paired with audio.",
 };
 
 export default function NewMeetingPage() {
@@ -28,11 +28,11 @@ export default function NewMeetingPage() {
             <span className="h-px w-7 bg-gradient-to-r from-[#ff7a1a]/60 to-transparent" />
           </div>
           <h1 className="font-display text-[32px] font-semibold leading-none tracking-[-0.045em] text-white sm:text-[40px]">
-            Import a transcript.
+            Import a meeting.
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-light leading-6 text-white/42 sm:text-[15px]">
-            Create a searchable meeting from an existing transcript. This flow does not upload audio
-            or run AI analysis.
+            Upload a transcript by itself or pair it with audio for playback. The transcript always
+            supplies the speaker names, timestamps, and text used for analysis.
           </p>
         </section>
 

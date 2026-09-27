@@ -72,6 +72,8 @@ export type MeetingDetail = {
   time: string;
   duration: string;
   durationSeconds: number;
+  recordingUrl?: string;
+  recordingMimeType?: string;
   participants: MeetingDetailParticipant[];
   waveform: number[];
   purpose: string;
