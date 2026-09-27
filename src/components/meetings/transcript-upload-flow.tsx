@@ -5,6 +5,7 @@ import {
   ArrowRight,
   AudioLines,
   CheckCircle2,
+  Download,
   FileAudio2,
   FileJson,
   FileText,
@@ -13,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
   AUDIO_FILE_ACCEPT,
   validateAudioFile,
@@ -29,6 +30,21 @@ import {
 type ImportMode = "transcript" | "audio-transcript";
 type TranscriptSelection = { file: File; transcript: ParsedTranscript };
 type AudioSelection = { file: File; durationSeconds: number | null };
+
+const TRANSCRIPT_TEMPLATE = {
+  title: "",
+  meeting_date: "",
+  duration_seconds: 0,
+  segments: [
+    {
+      speaker: "",
+      start_time_seconds: 0,
+      end_time_seconds: 0,
+      text: "",
+    },
+  ],
+};
+const TRANSCRIPT_TEMPLATE_JSON = JSON.stringify(TRANSCRIPT_TEMPLATE, null, 2);
 
 function formatDuration(totalSeconds: number) {
   const totalMinutes = Math.max(1, Math.round(totalSeconds / 60));
@@ -73,6 +89,34 @@ export function TranscriptUploadFlow() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isFormatGuideOpen, setIsFormatGuideOpen] = useState(true);
+
+  useEffect(() => {
+    if (!isFormatGuideOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsFormatGuideOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isFormatGuideOpen]);
+
+  const downloadJsonTemplate = () => {
+    const url = URL.createObjectURL(
+      new Blob([TRANSCRIPT_TEMPLATE_JSON], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "meeting-transcript-template.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const resetTranscript = () => {
     setTranscriptSelection(null);
@@ -184,16 +228,26 @@ export function TranscriptUploadFlow() {
   );
 
   return (
+    <>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
       <section className="rounded-3xl border border-white/[0.085] bg-[#0d0d13]/82 p-5 shadow-[0_22px_80px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-7">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-[#ff7a1a]/10 text-[#ff8b36]">
-            <UploadCloud className="size-[18px]" />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-[#ff7a1a]/10 text-[#ff8b36]">
+              <UploadCloud className="size-[18px]" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-semibold tracking-[-0.025em] text-white">Import files</h2>
+              <p className="mt-1 text-[11px] text-white/32">Transcript required · audio optional</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-display text-lg font-semibold tracking-[-0.025em] text-white">Import files</h2>
-            <p className="mt-1 text-[11px] text-white/32">Transcript required · audio optional</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsFormatGuideOpen(true)}
+            className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-white/[0.09] bg-white/[0.035] px-3 text-[10px] font-medium text-white/48 transition-colors hover:bg-white/[0.07] hover:text-white/75"
+          >
+            <FileJson className="size-3.5 text-[#ff8b36]" /> JSON guide
+          </button>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Import mode">
@@ -261,11 +315,99 @@ export function TranscriptUploadFlow() {
         <p className="mt-2 text-xs leading-5 text-white/38">Speaker names, timestamps, and non-empty text are required for every segment.</p>
         <div className="mt-6 space-y-4">
           <FormatExample icon={<FileJson className="size-4" />} label="JSON" code={`{\n  "title": "Weekly product sync",\n  "segments": [\n    {\n      "speaker": "Saeed",\n      "start_time_seconds": 0,\n      "end_time_seconds": 18,\n      "text": "Let's review the plan."\n    }\n  ]\n}`} />
-          <FormatExample icon={<FileText className="size-4" />} label="TXT" code={`Meeting Title: Weekly product sync\nDate: 2026-09-26\nDuration: 12 minutes\nParticipants: Saeed, Ahmed\n\n[00:00] Saeed:\nLet's review the plan.\n\n[00:18] Ahmed:\nThe first milestone is ready.`} />
         </div>
+        <button
+          type="button"
+          onClick={() => setIsFormatGuideOpen(true)}
+          className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#ff7a1a]/20 bg-[#ff7a1a]/[0.06] text-[11px] font-semibold text-[#ff9950] transition-colors hover:bg-[#ff7a1a]/[0.1]"
+        >
+          <Download className="size-3.5" /> Download blank JSON template
+        </button>
         <div className="mt-5 rounded-xl border border-white/[0.065] bg-white/[0.025] p-4"><p className="text-[11px] leading-5 text-white/35">When audio is included, its browser-readable duration is checked against the transcript. If metadata cannot be read, processing continues and the transcript duration remains authoritative.</p></div>
       </aside>
     </div>
+
+    {isFormatGuideOpen && (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transcript-format-title"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setIsFormatGuideOpen(false);
+        }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
+      >
+        <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-white/[0.11] bg-[#0d0d14] p-5 shadow-[0_28px_100px_rgba(0,0,0,0.7)] sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#ff7a1a]/10 text-[#ff8b36]">
+                <FileJson className="size-[18px]" />
+              </div>
+              <div>
+                <p className="font-label text-[8px] tracking-[0.2em] text-[#ff9950]">BEFORE YOU IMPORT</p>
+                <h2 id="transcript-format-title" className="font-display mt-2 text-xl font-semibold tracking-[-0.03em] text-white">
+                  Download and fill the JSON template
+                </h2>
+                <p className="mt-2 max-w-lg text-xs leading-5 text-white/38">
+                  Replace every blank value with your meeting data. Duplicate the segment object for
+                  every speaker turn, then upload the completed JSON file.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsFormatGuideOpen(false)}
+              aria-label="Close transcript format guide"
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] text-white/35 transition-colors hover:bg-white/[0.06] hover:text-white/70"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-[minmax(0,1fr)_210px]">
+            <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-black/25">
+              <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
+                <span className="font-label text-[8px] tracking-[0.17em] text-white/35">MEETING-TRANSCRIPT-TEMPLATE.JSON</span>
+                <span className="rounded-md bg-[#64d3ff]/10 px-2 py-1 text-[8px] text-[#64d3ff]">REQUIRED FORMAT</span>
+              </div>
+              <pre className="overflow-x-auto p-4 font-mono text-[10px] leading-5 text-white/48"><code>{TRANSCRIPT_TEMPLATE_JSON}</code></pre>
+            </div>
+            <div className="space-y-3">
+              {[
+                ["title", "Your meeting name"],
+                ["meeting_date", "Use YYYY-MM-DD"],
+                ["duration_seconds", "Total audio length"],
+                ["segments", "One object per speaker turn"],
+                ["timestamps", "Whole seconds in order"],
+              ].map(([field, detail]) => (
+                <div key={field} className="rounded-xl border border-white/[0.065] bg-white/[0.025] p-3">
+                  <p className="font-mono text-[9px] text-[#ff9950]">{field}</p>
+                  <p className="mt-1 text-[10px] leading-4 text-white/34">{detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setIsFormatGuideOpen(false)}
+              className="h-11 rounded-xl border border-white/[0.09] px-5 text-xs font-medium text-white/48 transition-colors hover:bg-white/[0.05] hover:text-white/75"
+            >
+              Continue to import
+            </button>
+            <button
+              type="button"
+              onClick={downloadJsonTemplate}
+              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#ff7a1a] px-5 text-xs font-semibold text-[#09090d] shadow-[0_10px_30px_rgba(255,122,26,0.22)] transition-colors hover:bg-[#ff8b38]"
+            >
+              <Download className="size-4" /> Download JSON template
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
